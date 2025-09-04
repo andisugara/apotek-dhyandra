@@ -18,6 +18,7 @@ class Stok extends Model
         'no_batch',
         'tanggal_expired',
         'qty',
+        'qty_awal',
         'pembelian_detail_id'
     ];
 
@@ -25,6 +26,7 @@ class Stok extends Model
     protected $casts = [
         'tanggal_expired' => 'date',
         'qty' => 'integer',
+        'qty_awal' => 'integer',
     ];
 
     // Relationships

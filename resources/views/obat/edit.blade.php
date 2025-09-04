@@ -312,6 +312,7 @@
                                         <th>Lokasi</th>
                                         <th>No. Batch</th>
                                         <th>Expired</th>
+                                        <th>Stok Awal</th>
                                         <th>Qty</th>
                                         <th>Aksi</th>
                                     </tr>
@@ -323,6 +324,7 @@
                                             <td>{{ $stokItem->lokasi->nama }}</td>
                                             <td>{{ $stokItem->no_batch }}</td>
                                             <td>{{ $stokItem->tanggal_expired->format('d/m/Y') }}</td>
+                                            <td>{{ $stokItem->qty_awal ?? $stokItem->qty }}</td>
                                             <td>
                                                 <input type="number" class="form-control form-control-sm stock-qty"
                                                     data-stock-id="{{ $stokItem->id }}" value="{{ $stokItem->qty }}"
@@ -488,6 +490,7 @@
                 'no_batch' => $stokItem->no_batch,
                 'tanggal_expired' => $stokItem->tanggal_expired->format('Y-m-d'),
                 'qty' => $stokItem->qty,
+                'qty_awal' => $stokItem->qty_awal ?? $stokItem->qty, // Use qty if qty_awal is null
                 'pembelian_detail_id' => $stokItem->pembelian_detail_id,
             ];
         })) !!}
@@ -838,6 +841,7 @@
                     no_batch: noBatch,
                     tanggal_expired: tanggalExpired,
                     qty: qty,
+                    qty_awal: qty, // Set initial stock value
                 });
 
                 // Format date for display
@@ -855,6 +859,7 @@
                         <td>${lokasiText}</td>
                         <td>${noBatch}</td>
                         <td>${formattedDate}</td>
+                        <td>${qty}</td>
                         <td>
                             <input type="number" class="form-control form-control-sm stock-qty"
                                 data-stock-id="${stockId}"
@@ -1052,6 +1057,8 @@
                 $('#obatForm').append(
                     `<input type="hidden" name="${prefix}[tanggal_expired]" value="${stok.tanggal_expired}">`);
                 $('#obatForm').append(`<input type="hidden" name="${prefix}[qty]" value="${stok.qty}">`);
+                $('#obatForm').append(
+                    `<input type="hidden" name="${prefix}[qty_awal]" value="${stok.qty_awal || stok.qty}">`);
             });
 
             // Add hidden inputs for stocks to delete

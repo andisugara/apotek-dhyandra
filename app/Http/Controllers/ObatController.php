@@ -143,13 +143,17 @@ class ObatController extends Controller
                             ->exists();
 
                         if ($satuanExists) {
+                            // Get the initial quantity value
+                            $qty = $stok['qty'] ?? 0;
+
                             Stok::create([
                                 'obat_id' => $obat->id,
                                 'satuan_id' => $stok['satuan_id'],
                                 'lokasi_id' => $stok['lokasi_id'],
                                 'no_batch' => $stok['no_batch'],
                                 'tanggal_expired' => $stok['tanggal_expired'],
-                                'qty' => $stok['qty'] ?? 0,
+                                'qty' => $qty,
+                                'qty_awal' => $qty, // Set qty_awal to the same as qty initially
                                 'pembelian_detail_id' => $stok['pembelian_detail_id'] ?? null,
                             ]);
                         }
@@ -307,13 +311,17 @@ class ObatController extends Controller
                                     ]);
                                 }
                             } else {
+                                // Get the initial quantity value
+                                $qty = $stok['qty'] ?? 0;
+
                                 Stok::create([
                                     'obat_id' => $obat->id,
                                     'satuan_id' => $stok['satuan_id'],
                                     'lokasi_id' => $stok['lokasi_id'],
                                     'no_batch' => $stok['no_batch'],
                                     'tanggal_expired' => $stok['tanggal_expired'],
-                                    'qty' => $stok['qty'] ?? 0,
+                                    'qty' => $qty,
+                                    'qty_awal' => $qty, // Set qty_awal to the same as qty initially
                                     'pembelian_detail_id' => $stok['pembelian_detail_id'] ?? null,
                                 ]);
                             }
@@ -516,13 +524,16 @@ class ObatController extends Controller
                 ], 400);
             }
 
+            $qty = $validated['qty'];
+
             $stok = Stok::create([
                 'obat_id' => $id,
                 'satuan_id' => $validated['satuan_id'],
                 'lokasi_id' => $validated['lokasi_id'],
                 'no_batch' => $validated['no_batch'],
                 'tanggal_expired' => $validated['tanggal_expired'],
-                'qty' => $validated['qty'],
+                'qty' => $qty,
+                'qty_awal' => $qty, // Set qty_awal to the same as qty initially
             ]);
 
             return response()->json([

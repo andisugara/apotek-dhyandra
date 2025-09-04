@@ -58,7 +58,7 @@ class Pengeluaran extends Model
     public function canBeDeleted()
     {
         $oneMonthAgo = Carbon::now()->subMonth();
-        return $this->created_at->gt($oneMonthAgo);
+        return $this->created_at?->gt($oneMonthAgo) ?? false;
     }
 
     /**
