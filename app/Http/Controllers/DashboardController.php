@@ -43,12 +43,48 @@ class DashboardController extends Controller
         // This month's summary
         $monthlyTotalSales = Penjualan::whereBetween('tanggal_penjualan', [$firstDayOfMonth, $lastDayOfMonth])->sum('grand_total');
         $monthlyTotalExpenses = Pengeluaran::whereBetween('tanggal', [$firstDayOfMonth, $lastDayOfMonth])->sum('jumlah');
-        $monthlyNetProfit = $monthlyTotalSales - $monthlyTotalExpenses;
+        
+        // Calculate cost of goods sold (same method as in LaporanLabaRugiController)
+        $monthlySalesData = DB::table('penjualan_details')
+            ->join('penjualans', 'penjualans.id', '=', 'penjualan_details.penjualan_id')
+            ->join('obat', 'obat.id', '=', 'penjualan_details.obat_id')
+            ->join('obat_satuan', function ($join) {
+                $join->on('obat.id', '=', 'obat_satuan.obat_id')
+                    ->on('penjualan_details.satuan_id', '=', 'obat_satuan.satuan_id');
+            })
+            ->select(
+                DB::raw('SUM(penjualan_details.total) as total_sales'),
+                DB::raw('SUM(obat_satuan.harga_beli * penjualan_details.jumlah) as total_cost')
+            )
+            ->whereBetween('penjualans.tanggal_penjualan', [$firstDayOfMonth, $lastDayOfMonth])
+            ->first();
+            
+        $monthlyCostOfGoodsSold = $monthlySalesData->total_cost ?? 0;
+        $monthlyGrossProfit = $monthlyTotalSales - $monthlyCostOfGoodsSold;
+        $monthlyNetProfit = $monthlyGrossProfit - $monthlyTotalExpenses;
 
         // Last month's summary (for comparison)
         $lastMonthTotalSales = Penjualan::whereBetween('tanggal_penjualan', [$firstDayOfLastMonth, $lastDayOfLastMonth])->sum('grand_total');
         $lastMonthTotalExpenses = Pengeluaran::whereBetween('tanggal', [$firstDayOfLastMonth, $lastDayOfLastMonth])->sum('jumlah');
-        $lastMonthNetProfit = $lastMonthTotalSales - $lastMonthTotalExpenses;
+        
+        // Calculate last month's cost of goods sold
+        $lastMonthSalesData = DB::table('penjualan_details')
+            ->join('penjualans', 'penjualans.id', '=', 'penjualan_details.penjualan_id')
+            ->join('obat', 'obat.id', '=', 'penjualan_details.obat_id')
+            ->join('obat_satuan', function ($join) {
+                $join->on('obat.id', '=', 'obat_satuan.obat_id')
+                    ->on('penjualan_details.satuan_id', '=', 'obat_satuan.satuan_id');
+            })
+            ->select(
+                DB::raw('SUM(penjualan_details.total) as total_sales'),
+                DB::raw('SUM(obat_satuan.harga_beli * penjualan_details.jumlah) as total_cost')
+            )
+            ->whereBetween('penjualans.tanggal_penjualan', [$firstDayOfLastMonth, $lastDayOfLastMonth])
+            ->first();
+            
+        $lastMonthCostOfGoodsSold = $lastMonthSalesData->total_cost ?? 0;
+        $lastMonthGrossProfit = $lastMonthTotalSales - $lastMonthCostOfGoodsSold;
+        $lastMonthNetProfit = $lastMonthGrossProfit - $lastMonthTotalExpenses;
 
         $monthlyProfitGrowth = $lastMonthNetProfit > 0
             ? (($monthlyNetProfit - $lastMonthNetProfit) / $lastMonthNetProfit) * 100
@@ -184,8 +220,25 @@ class DashboardController extends Controller
 
         $totalExpenses = Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])
             ->sum('jumlah');
-
-        $netProfit = $totalSales - $totalExpenses;
+            
+        // Calculate cost of goods sold (same method as in LaporanLabaRugiController)
+        $salesData = DB::table('penjualan_details')
+            ->join('penjualans', 'penjualans.id', '=', 'penjualan_details.penjualan_id')
+            ->join('obat', 'obat.id', '=', 'penjualan_details.obat_id')
+            ->join('obat_satuan', function ($join) {
+                $join->on('obat.id', '=', 'obat_satuan.obat_id')
+                    ->on('penjualan_details.satuan_id', '=', 'obat_satuan.satuan_id');
+            })
+            ->select(
+                DB::raw('SUM(penjualan_details.total) as total_sales'),
+                DB::raw('SUM(obat_satuan.harga_beli * penjualan_details.jumlah) as total_cost')
+            )
+            ->whereBetween('penjualans.tanggal_penjualan', [$startDate, $endDate])
+            ->first();
+            
+        $costOfGoodsSold = $salesData->total_cost ?? 0;
+        $grossProfit = $totalSales - $costOfGoodsSold;
+        $netProfit = $grossProfit - $totalExpenses;
 
         // Get chart data
         if ($period == 'today') {

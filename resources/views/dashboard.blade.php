@@ -155,6 +155,7 @@
                         @elseif($monthlyProfitGrowth < 0)
                             <span class="badge badge-danger ms-2">{{ number_format($monthlyProfitGrowth, 1) }}%</span>
                         @endif
+                        <div class="fs-7 text-muted">(Pendapatan - HPP - Pengeluaran)</div>
                     </div>
                 </div>
                 <!--end::Body-->
@@ -221,6 +222,7 @@
                             <span class="fs-6 text-gray-500">Keuntungan Bersih</span>
                             <span class="fs-4 fw-bold text-success d-block">Rp <span
                                     id="chartNetProfit">{{ number_format($monthlyNetProfit, 0, ',', '.') }}</span></span>
+                            <span class="fs-7 text-muted">(Setelah HPP & Pengeluaran)</span>
                         </div>
                         <!--end::Stat-->
                     </div>
