@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\TransaksiAkun;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -67,5 +68,14 @@ class Pengeluaran extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the accounting transactions related to this expense.
+     */
+    public function transaksiAkun()
+    {
+        return $this->hasMany(TransaksiAkun::class, 'referensi_id')
+            ->where('tipe_referensi', 'PENGELUARAN');
     }
 }

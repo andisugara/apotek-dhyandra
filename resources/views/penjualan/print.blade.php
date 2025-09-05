@@ -7,96 +7,166 @@
         <title>Struk Penjualan - {{ $penjualan->no_faktur }}</title>
         <style>
             @page {
-                margin: 5mm;
+                margin: 0;
+                padding: 0;
             }
 
             body {
                 font-family: Arial, sans-serif;
-                font-size: 9pt;
-                line-height: 1.3;
+                font-size: 8pt;
+                line-height: 1.2;
                 margin: 0;
                 padding: 0;
                 width: 100%;
+                text-align: center;
             }
 
             .receipt {
-                width: 58mm;
+                width: 100%;
+                max-width: 58mm;
+                margin: 0 auto;
+                padding: 2mm;
+                box-sizing: border-box;
             }
 
             .header {
                 text-align: center;
-                margin-bottom: 10px;
+                margin-bottom: 5px;
+                width: 100%;
             }
 
             .logo {
-                max-width: 100px;
+                max-width: 70px;
+                height: auto;
                 margin: 0 auto;
                 display: block;
             }
 
             .title {
                 font-weight: bold;
-                font-size: 12pt;
-                margin: 5px 0;
+                font-size: 9pt;
+                margin: 3px 0;
+                text-align: center;
+                width: 100%;
             }
 
             .address {
-                font-size: 8pt;
-                margin-bottom: 5px;
+                font-size: 7pt;
+                margin-bottom: 2px;
+                text-align: center;
+                width: 100%;
             }
 
             .divider {
                 border-top: 1px dashed #000;
-                margin: 5px 0;
+                margin: 3px 0;
+                width: 100%;
             }
 
             .info {
-                margin-bottom: 10px;
+                margin-bottom: 5px;
+                width: 100%;
+                text-align: left;
             }
 
             .info-row {
                 display: flex;
                 justify-content: space-between;
+                margin-bottom: 1px;
+                width: 100%;
+                font-size: 7pt;
+                text-align: left;
             }
 
             table {
                 width: 100%;
                 border-collapse: collapse;
-                margin: 5px 0;
+                margin: 3px 0;
+                table-layout: fixed;
             }
 
             th {
                 text-align: left;
-                font-size: 8pt;
+                font-size: 7pt;
+                padding: 1px 0;
             }
 
             td {
-                font-size: 8pt;
+                font-size: 7pt;
+                padding: 1px 0;
+                word-wrap: break-word;
             }
+
+            /* Column widths for items table */
+            table thead tr th:nth-child(1) {
+                width: 45%;
+                text-align: left;
+            }
+
+            /* Item name */
+            table thead tr th:nth-child(2) {
+                width: 15%;
+                text-align: right;
+            }
+
+            /* Quantity */
+            table thead tr th:nth-child(3) {
+                width: 20%;
+                text-align: right;
+            }
+
+            /* Price */
+            table thead tr th:nth-child(4) {
+                width: 20%;
+                text-align: right;
+            }
+
+            /* Total */
 
             .right {
                 text-align: right;
             }
 
             .item-row {
-                padding: 2px 0;
+                padding: 1px 0;
+                font-size: 7pt;
+            }
+
+            /* Fix for product name column */
+            tr.item-row td {
+                font-size: 7pt;
+                line-height: 1.1;
             }
 
             .total-section {
                 margin-top: 5px;
                 border-top: 1px dashed #000;
                 padding-top: 5px;
+                width: 100%;
+                text-align: left;
             }
 
             .grand-total {
                 font-weight: bold;
-                font-size: 10pt;
+                font-size: 9pt;
+            }
+
+            .total-row {
+                font-size: 7pt;
+                line-height: 1.5;
+                text-align: left;
             }
 
             .footer {
                 text-align: center;
-                margin-top: 10px;
-                font-size: 8pt;
+                margin-top: 5px;
+                font-size: 7pt;
+                width: 100%;
+            }
+
+            .footer p {
+                margin: 2px 0;
+                text-align: center;
             }
         </style>
     </head>
@@ -115,22 +185,26 @@
             <div class="divider"></div>
 
             <div class="info">
-                <div class="info-row">
-                    <span>No. Faktur</span>
-                    <span>: {{ $penjualan->no_faktur }}</span>
-                </div>
-                <div class="info-row">
-                    <span>Tanggal</span>
-                    <span>: {{ $penjualan->tanggal_penjualan->format('d/m/Y') }}</span>
-                </div>
-                <div class="info-row">
-                    <span>Kasir</span>
-                    <span>: {{ $penjualan->user->name }}</span>
-                </div>
-                <div class="info-row">
-                    <span>Pasien</span>
-                    <span>: {{ $penjualan->pasien ? $penjualan->pasien->nama : 'Umum' }}</span>
-                </div>
+                <table style="border: none; width: 100%;">
+                    <tr>
+                        <td style="width: 30%; text-align: left; font-size: 7pt;">No. Faktur</td>
+                        <td style="width: 70%; text-align: left; font-size: 7pt;">: {{ $penjualan->no_faktur }}</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 30%; text-align: left; font-size: 7pt;">Tanggal</td>
+                        <td style="width: 70%; text-align: left; font-size: 7pt;">:
+                            {{ $penjualan->tanggal_penjualan->format('d/m/Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 30%; text-align: left; font-size: 7pt;">Kasir</td>
+                        <td style="width: 70%; text-align: left; font-size: 7pt;">: {{ $penjualan->user->name }}</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 30%; text-align: left; font-size: 7pt;">Pasien</td>
+                        <td style="width: 70%; text-align: left; font-size: 7pt;">:
+                            {{ $penjualan->pasien ? $penjualan->pasien->nama : 'Umum' }}</td>
+                    </tr>
+                </table>
             </div>
 
             <div class="divider"></div>
@@ -138,7 +212,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Item</th>
+                        <th style="text-align: left;">Item</th>
                         <th class="right">Jml</th>
                         <th class="right">Harga</th>
                         <th class="right">Total</th>
@@ -147,51 +221,54 @@
                 <tbody>
                     @foreach ($penjualan->details as $detail)
                         <tr class="item-row">
-                            <td colspan="4">{{ $detail->obat->nama_obat }}</td>
+                            <td colspan="4" style="text-align: left;">{{ $detail->obat->nama_obat }}
+                                ({{ $detail->satuan->nama }})
+                            </td>
                         </tr>
                         <tr>
-                            <td></td>
-                            <td class="right">{{ $detail->jumlah }}</td>
-                            <td class="right">{{ number_format($detail->harga, 0, ',', '.') }}</td>
-                            <td class="right">{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
+                            <td width="50%" style="text-align: left;"></td>
+                            <td width="15%" class="right">{{ $detail->jumlah }}</td>
+                            <td width="15%" class="right">{{ number_format($detail->harga, 0, ',', '.') }}</td>
+                            <td width="20%" class="right">{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
-
             <div class="total-section">
-                <div class="info-row">
-                    <span>Subtotal</span>
-                    <span>Rp {{ $penjualan->formatted_subtotal }}</span>
-                </div>
-                <div class="info-row">
-                    <span>Diskon</span>
-                    <span>Rp {{ $penjualan->formatted_diskon_total }}</span>
-                </div>
-                <div class="info-row">
-                    <span>PPN</span>
-                    <span>Rp {{ $penjualan->formatted_ppn_total }}</span>
-                </div>
-                <div class="info-row grand-total">
-                    <span>Grand Total</span>
-                    <span>Rp {{ $penjualan->formatted_grand_total }}</span>
-                </div>
+                <table style="border: none; width: 100%;">
+                    <tr class="total-row">
+                        <td style="text-align: left;">Subtotal</td>
+                        <td style="text-align: right;">Rp {{ $penjualan->formatted_subtotal }}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td style="text-align: left;">Diskon</td>
+                        <td style="text-align: right;">Rp {{ $penjualan->formatted_diskon_total }}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td style="text-align: left;">PPN</td>
+                        <td style="text-align: right;">Rp {{ $penjualan->formatted_ppn_total }}</td>
+                    </tr>
+                    <tr class="total-row grand-total">
+                        <td style="text-align: left;">Grand Total</td>
+                        <td style="text-align: right;">Rp {{ $penjualan->formatted_grand_total }}</td>
+                    </tr>
 
-                @if ($penjualan->jenis === 'TUNAI')
-                    <div class="info-row">
-                        <span>Bayar</span>
-                        <span>Rp {{ $penjualan->formatted_bayar }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span>Kembalian</span>
-                        <span>Rp {{ $penjualan->formatted_kembalian }}</span>
-                    </div>
-                @else
-                    <div class="info-row">
-                        <span>Pembayaran</span>
-                        <span>Non Tunai</span>
-                    </div>
-                @endif
+                    @if ($penjualan->jenis === 'TUNAI')
+                        <tr class="total-row">
+                            <td style="text-align: left;">Bayar</td>
+                            <td style="text-align: right;">Rp {{ $penjualan->formatted_bayar }}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td style="text-align: left;">Kembalian</td>
+                            <td style="text-align: right;">Rp {{ $penjualan->formatted_kembalian }}</td>
+                        </tr>
+                    @else
+                        <tr class="total-row">
+                            <td style="text-align: left;">Pembayaran</td>
+                            <td style="text-align: right;">Non Tunai</td>
+                        </tr>
+                    @endif
+                </table>
             </div>
 
             <div class="footer">

@@ -2,20 +2,17 @@
 @section('title', 'Dashboard')
 
 @section('styles')
-    <style>
-        .apexcharts-toolbar {
-            z-index: 1 !important;
-            /* Fix chart toolbar overlapping issues */
-        }
-
-        .card.hoverable {
-            transition: transform .2s ease-in-out;
-        }
-
-        .card.hoverable:hover {
-            transform: translateY(-5px);
-        }
-    </style>
+<style>
+    .apexcharts-toolbar {
+        z-index: 1 !important; /* Fix chart toolbar overlapping issues */
+    }
+    .card.hoverable {
+        transition: transform .2s ease-in-out;
+    }
+    .card.hoverable:hover {
+        transform: translateY(-5px);
+    }
+</style>
 @endsection
 
 @section('content')
@@ -63,14 +60,9 @@
                 <!--begin::Body-->
                 <div class="card-body">
                     <span class="svg-icon svg-icon-primary svg-icon-3x ms-n1">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path opacity="0.3"
-                                d="M18 21.6C16.3 21.6 15 20.3 15 18.6V2.50001C15 2.20001 14.6 1.99996 14.3 2.19996L13 3.59999L11.7 2.3C11.3 1.9 10.7 1.9 10.3 2.3L9 3.59999L7.70001 2.3C7.30001 1.9 6.69999 1.9 6.29999 2.3L5 3.59999L3.70001 2.3C3.50001 2.1 3 2.20001 3 3.50001V18.6C3 20.3 4.3 21.6 6 21.6H18Z"
-                                fill="currentColor"></path>
-                            <path
-                                d="M12 12.6H11C10.4 12.6 10 12.2 10 11.6C10 11 10.4 10.6 11 10.6H12C12.6 10.6 13 11 13 11.6C13 12.2 12.6 12.6 12 12.6ZM9 11.6C9 11 8.6 10.6 8 10.6H6C5.4 10.6 5 11 5 11.6C5 12.2 5.4 12.6 6 12.6H8C8.6 12.6 9 12.2 9 11.6ZM9 7.59998C9 6.99998 8.6 6.59998 8 6.59998H6C5.4 6.59998 5 6.99998 5 7.59998C5 8.19998 5.4 8.59998 6 8.59998H8C8.6 8.59998 9 8.19998 9 7.59998Z"
-                                fill="currentColor"></path>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path opacity="0.3" d="M18 21.6C16.3 21.6 15 20.3 15 18.6V2.50001C15 2.20001 14.6 1.99996 14.3 2.19996L13 3.59999L11.7 2.3C11.3 1.9 10.7 1.9 10.3 2.3L9 3.59999L7.70001 2.3C7.30001 1.9 6.69999 1.9 6.29999 2.3L5 3.59999L3.70001 2.3C3.50001 2.1 3 2.20001 3 3.50001V18.6C3 20.3 4.3 21.6 6 21.6H18Z" fill="currentColor"></path>
+                            <path d="M12 12.6H11C10.4 12.6 10 12.2 10 11.6C10 11 10.4 10.6 11 10.6H12C12.6 10.6 13 11 13 11.6C13 12.2 12.6 12.6 12 12.6ZM9 11.6C9 11 8.6 10.6 8 10.6H6C5.4 10.6 5 11 5 11.6C5 12.2 5.4 12.6 6 12.6H8C8.6 12.6 9 12.2 9 11.6ZM9 7.59998C9 6.99998 8.6 6.59998 8 6.59998H6C5.4 6.59998 5 6.99998 5 7.59998C5 8.19998 5.4 8.59998 6 8.59998H8C8.6 8.59998 9 8.19998 9 7.59998Z" fill="currentColor"></path>
                         </svg>
                     </span>
 
@@ -92,17 +84,10 @@
                 <!--begin::Body-->
                 <div class="card-body">
                     <span class="svg-icon svg-icon-success svg-icon-3x ms-n1">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M21 10H13V11C13 11.6 12.6 12 12 12C11.4 12 11 11.6 11 11V10H3C2.4 10 2 10.4 2 11V13H22V11C22 10.4 21.6 10 21 10Z"
-                                fill="currentColor"></path>
-                            <path opacity="0.3"
-                                d="M12 12C11.4 12 11 11.6 11 11V3C11 2.4 11.4 2 12 2C12.6 2 13 2.4 13 3V11C13 11.6 12.6 12 12 12Z"
-                                fill="currentColor"></path>
-                            <path opacity="0.3"
-                                d="M18.1 21H5.9C5.4 21 4.9 20.6 4.8 20.1L3 13H21L19.2 20.1C19.1 20.6 18.6 21 18.1 21ZM13 18V15C13 14.4 12.6 14 12 14C11.4 14 11 14.4 11 15V18C11 18.6 11.4 19 12 19C12.6 19 13 18.6 13 18Z"
-                                fill="currentColor"></path>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 10H13V11C13 11.6 12.6 12 12 12C11.4 12 11 11.6 11 11V10H3C2.4 10 2 10.4 2 11V13H22V11C22 10.4 21.6 10 21 10Z" fill="currentColor"></path>
+                            <path opacity="0.3" d="M12 12C11.4 12 11 11.6 11 11V3C11 2.4 11.4 2 12 2C12.6 2 13 2.4 13 3V11C13 11.6 12.6 12 12 12Z" fill="currentColor"></path>
+                            <path opacity="0.3" d="M18.1 21H5.9C5.4 21 4.9 20.6 4.8 20.1L3 13H21L19.2 20.1C19.1 20.6 18.6 21 18.1 21ZM13 18V15C13 14.4 12.6 14 12 14C11.4 14 11 14.4 11 15V18C11 18.6 11.4 19 12 19C12.6 19 13 18.6 13 18Z" fill="currentColor"></path>
                         </svg>
                     </span>
 
@@ -110,8 +95,8 @@
                         Rp <span id="todayTotalSales">{{ number_format($todayTotalSales, 0, ',', '.') }}</span>
                     </div>
                     <div class="fw-semibold text-gray-600">
-                        Pendapatan Hari Ini
-                        @if ($salesGrowth > 0)
+                        Pendapatan Hari Ini 
+                        @if($salesGrowth > 0)
                             <span class="badge badge-success ms-2">+{{ number_format($salesGrowth, 1) }}%</span>
                         @elseif($salesGrowth < 0)
                             <span class="badge badge-danger ms-2">{{ number_format($salesGrowth, 1) }}%</span>
@@ -131,17 +116,10 @@
                 <!--begin::Body-->
                 <div class="card-body">
                     <span class="svg-icon svg-icon-warning svg-icon-3x ms-n1">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path opacity="0.3"
-                                d="M3.20001 5.91897L16.9 3.01895C17.4 2.91895 18 3.219 18.1 3.819L19.2 9.01895L3.20001 5.91897Z"
-                                fill="currentColor"></path>
-                            <path opacity="0.3"
-                                d="M13 13.9189C13 12.2189 14.3 10.9189 16 10.9189H21C21.6 10.9189 22 11.3189 22 11.9189V15.9189C22 16.5189 21.6 16.9189 21 16.9189H16C14.3 16.9189 13 15.6189 13 13.9189ZM16 12.4189C15.2 12.4189 14.5 13.1189 14.5 13.9189C14.5 14.7189 15.2 15.4189 16 15.4189C16.8 15.4189 17.5 14.7189 17.5 13.9189C17.5 13.1189 16.8 12.4189 16 12.4189Z"
-                                fill="currentColor"></path>
-                            <path
-                                d="M13 13.9189C13 12.2189 14.3 10.9189 16 10.9189H21V7.91895C21 6.81895 20.1 5.91895 19 5.91895H3C2.4 5.91895 2 6.31895 2 6.91895V20.9189C2 21.5189 2.4 21.9189 3 21.9189H19C20.1 21.9189 21 21.0189 21 19.9189V16.9189H16C14.3 16.9189 13 15.6189 13 13.9189Z"
-                                fill="currentColor"></path>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path opacity="0.3" d="M3.20001 5.91897L16.9 3.01895C17.4 2.91895 18 3.219 18.1 3.819L19.2 9.01895L3.20001 5.91897Z" fill="currentColor"></path>
+                            <path opacity="0.3" d="M13 13.9189C13 12.2189 14.3 10.9189 16 10.9189H21C21.6 10.9189 22 11.3189 22 11.9189V15.9189C22 16.5189 21.6 16.9189 21 16.9189H16C14.3 16.9189 13 15.6189 13 13.9189ZM16 12.4189C15.2 12.4189 14.5 13.1189 14.5 13.9189C14.5 14.7189 15.2 15.4189 16 15.4189C16.8 15.4189 17.5 14.7189 17.5 13.9189C17.5 13.1189 16.8 12.4189 16 12.4189Z" fill="currentColor"></path>
+                            <path d="M13 13.9189C13 12.2189 14.3 10.9189 16 10.9189H21V7.91895C21 6.81895 20.1 5.91895 19 5.91895H3C2.4 5.91895 2 6.31895 2 6.91895V20.9189C2 21.5189 2.4 21.9189 3 21.9189H19C20.1 21.9189 21 21.0189 21 19.9189V16.9189H16C14.3 16.9189 13 15.6189 13 13.9189Z" fill="currentColor"></path>
                         </svg>
                     </span>
 
@@ -150,7 +128,7 @@
                     </div>
                     <div class="fw-semibold text-gray-600">
                         Keuntungan Bulan Ini
-                        @if ($monthlyProfitGrowth > 0)
+                        @if($monthlyProfitGrowth > 0)
                             <span class="badge badge-success ms-2">+{{ number_format($monthlyProfitGrowth, 1) }}%</span>
                         @elseif($monthlyProfitGrowth < 0)
                             <span class="badge badge-danger ms-2">{{ number_format($monthlyProfitGrowth, 1) }}%</span>
@@ -203,24 +181,21 @@
                         <!--begin::Stat-->
                         <div class="me-8 mb-3">
                             <span class="fs-6 text-gray-500">Total Penjualan</span>
-                            <span class="fs-4 fw-bold text-gray-800 d-block">Rp <span
-                                    id="chartTotalSales">{{ number_format($monthlyTotalSales, 0, ',', '.') }}</span></span>
+                            <span class="fs-4 fw-bold text-gray-800 d-block">Rp <span id="chartTotalSales">{{ number_format($monthlyTotalSales, 0, ',', '.') }}</span></span>
                         </div>
                         <!--end::Stat-->
 
                         <!--begin::Stat-->
                         <div class="me-8 mb-3">
                             <span class="fs-6 text-gray-500">Total Pengeluaran</span>
-                            <span class="fs-4 fw-bold text-gray-800 d-block">Rp <span
-                                    id="chartTotalExpenses">{{ number_format($monthlyTotalExpenses, 0, ',', '.') }}</span></span>
+                            <span class="fs-4 fw-bold text-gray-800 d-block">Rp <span id="chartTotalExpenses">{{ number_format($monthlyTotalExpenses, 0, ',', '.') }}</span></span>
                         </div>
                         <!--end::Stat-->
 
                         <!--begin::Stat-->
                         <div class="mb-3">
                             <span class="fs-6 text-gray-500">Keuntungan Bersih</span>
-                            <span class="fs-4 fw-bold text-success d-block">Rp <span
-                                    id="chartNetProfit">{{ number_format($monthlyNetProfit, 0, ',', '.') }}</span></span>
+                            <span class="fs-4 fw-bold text-success d-block">Rp <span id="chartNetProfit">{{ number_format($monthlyNetProfit, 0, ',', '.') }}</span></span>
                         </div>
                         <!--end::Stat-->
                     </div>
@@ -259,8 +234,7 @@
                                 <div class="d-flex align-items-center me-2">
                                     <!--begin::Symbol-->
                                     <div class="symbol symbol-30px symbol-circle me-4">
-                                        <span class="symbol-label"
-                                            style="background-color: {{ ['#3E97FF', '#50CD89', '#F1416C', '#FFC700', '#7239EA'][$index % 5] }}">
+                                        <span class="symbol-label" style="background-color: {{ ['#3E97FF', '#50CD89', '#F1416C', '#FFC700', '#7239EA'][$index % 5] }}">
                                             {{ $index + 1 }}
                                         </span>
                                     </div>
@@ -268,8 +242,7 @@
 
                                     <!--begin::Title-->
                                     <div>
-                                        <a href="#"
-                                            class="fs-6 text-gray-800 text-hover-primary fw-bold">{{ $expense->nama }}</a>
+                                        <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bold">{{ $expense->nama }}</a>
                                     </div>
                                     <!--end::Title-->
                                 </div>
@@ -277,8 +250,7 @@
 
                                 <!--begin::Label-->
                                 <div class="label text-end">
-                                    <span class="fs-7 fw-bold text-gray-600">Rp
-                                        {{ number_format($expense->total_amount, 0, ',', '.') }}</span>
+                                    <span class="fs-7 fw-bold text-gray-600">Rp {{ number_format($expense->total_amount, 0, ',', '.') }}</span>
                                 </div>
                                 <!--end::Label-->
                             </div>
@@ -319,8 +291,7 @@
                         <div class="d-flex align-items-sm-center mb-7">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-circle symbol-50px me-5">
-                                <span class="symbol-label"
-                                    style="background-color: {{ ['#3E97FF', '#50CD89', '#F1416C', '#FFC700', '#7239EA'][$index % 5] }}">
+                                <span class="symbol-label" style="background-color: {{ ['#3E97FF', '#50CD89', '#F1416C', '#FFC700', '#7239EA'][$index % 5] }}">
                                     {{ $index + 1 }}
                                 </span>
                             </div>
@@ -330,17 +301,14 @@
                             <div class="d-flex flex-row-fluid align-items-center flex-wrap my-lg-0">
                                 <!--begin::Title-->
                                 <div class="flex-grow-1 me-2">
-                                    <a href="{{ route('obat.show', $product->id) }}"
-                                        class="text-gray-800 text-hover-primary fs-6 fw-bold">{{ $product->nama_obat }}</a>
-                                    <span class="text-muted fw-semibold d-block pt-1">Terjual {{ $product->total_qty }}
-                                        item</span>
+                                    <a href="{{ route('obat.show', $product->id) }}" class="text-gray-800 text-hover-primary fs-6 fw-bold">{{ $product->nama_obat }}</a>
+                                    <span class="text-muted fw-semibold d-block pt-1">Terjual {{ $product->total_qty }} item</span>
                                 </div>
                                 <!--end::Title-->
 
                                 <!--begin::Label-->
                                 <div class="text-end py-lg-0">
-                                    <span class="text-gray-800 fw-bold fs-6">Rp
-                                        {{ number_format($product->total_sales, 0, ',', '.') }}</span>
+                                    <span class="text-gray-800 fw-bold fs-6">Rp {{ number_format($product->total_sales, 0, ',', '.') }}</span>
                                 </div>
                                 <!--end::Label-->
                             </div>
@@ -388,19 +356,15 @@
 
                             <!--begin::Text-->
                             <div class="flex-grow-1">
-                                <a href="{{ route('penjualan.show', $transaction->id) }}"
-                                    class="text-dark fw-bold text-hover-primary fs-6">{{ $transaction->no_faktur }}</a>
-                                <span
-                                    class="text-muted d-block fw-bold">{{ $transaction->tanggal_penjualan->format('d/m/Y H:i') }}</span>
+                                <a href="{{ route('penjualan.show', $transaction->id) }}" class="text-dark fw-bold text-hover-primary fs-6">{{ $transaction->no_faktur }}</a>
+                                <span class="text-muted d-block fw-bold">{{ $transaction->tanggal_penjualan->format('d/m/Y H:i') }}</span>
                             </div>
                             <!--end::Text-->
 
                             <!--begin::Amount-->
                             <div class="text-end">
-                                <span class="text-gray-800 fw-bold fs-6">Rp
-                                    {{ number_format($transaction->grand_total, 0, ',', '.') }}</span>
-                                <span
-                                    class="text-muted d-block fw-semibold">{{ $transaction->pasien ? $transaction->pasien->nama : 'Umum' }}</span>
+                                <span class="text-gray-800 fw-bold fs-6">Rp {{ number_format($transaction->grand_total, 0, ',', '.') }}</span>
+                                <span class="text-muted d-block fw-semibold">{{ $transaction->pasien ? $transaction->pasien->nama : 'Umum' }}</span>
                             </div>
                             <!--end::Amount-->
                         </div>
@@ -506,275 +470,3 @@
     </div>
     <!--end::Row-->
 @endsection
-
-@push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script>
-        // Prepare sales chart data with defaults
-        var salesChartData = @json($dailySalesChartData['data'] ?? []);
-        var salesChartLabels = @json($dailySalesChartData['labels'] ?? []);
-
-        // Daily sales chart
-        var salesChartOptions = {
-            series: [{
-                name: 'Penjualan',
-                data: salesChartData
-            }],
-            chart: {
-                type: 'area',
-                height: 350,
-                toolbar: {
-                    show: false
-                },
-                zoom: {
-                    enabled: false
-                }
-            },
-            colors: ['#3E97FF'],
-            dataLabels: {
-                enabled: false
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 3
-            },
-            xaxis: {
-                categories: salesChartLabels,
-                axisBorder: {
-                    show: false,
-                },
-                axisTicks: {
-                    show: false
-                },
-                labels: {
-                    style: {
-                        fontSize: '12px'
-                    }
-                }
-            },
-            yaxis: {
-                labels: {
-                    formatter: function(value) {
-                        return 'Rp ' + formatNumber(value);
-                    },
-                    style: {
-                        fontSize: '12px'
-                    }
-                }
-            },
-            legend: {
-                show: false
-            },
-            fill: {
-                opacity: 0.3,
-                type: 'gradient',
-                gradient: {
-                    shade: 'light',
-                    type: "vertical",
-                    shadeIntensity: 0.5,
-                    opacityFrom: 0.7,
-                    opacityTo: 0.2,
-                    stops: [0, 100]
-                }
-            },
-            grid: {
-                borderColor: '#f1f1f1',
-                strokeDashArray: 4,
-                yaxis: {
-                    lines: {
-                        show: true
-                    }
-                }
-            },
-            markers: {
-                size: 4,
-                colors: ['#3E97FF'],
-                strokeColors: '#FFFFFF',
-                strokeWidth: 2,
-                hover: {
-                    size: 7
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: function(value) {
-                        return 'Rp ' + formatNumber(value);
-                    }
-                }
-            }
-        };
-
-        // Create the sales chart
-        try {
-            if (document.getElementById('salesChart')) {
-                if (salesChartData && salesChartData.length > 0) {
-                    var salesChart = new ApexCharts(document.querySelector('#salesChart'), salesChartOptions);
-                    salesChart.render();
-                } else {
-                    document.getElementById('salesChart').innerHTML =
-                        '<div class="text-center py-5"><span class="fs-6 text-gray-500">Tidak ada data penjualan untuk ditampilkan</span></div>';
-                }
-            }
-        } catch (error) {
-            console.error("Error rendering sales chart:", error);
-            if (document.getElementById('salesChart')) {
-                document.getElementById('salesChart').innerHTML =
-                    '<div class="text-center py-5"><span class="fs-6 text-gray-500">Terjadi kesalahan saat memuat grafik</span></div>';
-            }
-        }
-
-        // Prepare expense chart data with defaults
-        var expenseChartData = @json($expenseChartData['data'] ?? []);
-        var expenseChartLabels = @json($expenseChartData['labels'] ?? []);
-
-        // Expense chart (donut)
-        var expenseChartOptions = {
-            series: expenseChartData,
-            chart: {
-                type: 'donut',
-                height: 250,
-                toolbar: {
-                    show: false
-                }
-            },
-            labels: expenseChartLabels,
-            colors: ['#3E97FF', '#50CD89', '#F1416C', '#FFC700', '#7239EA'],
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '65%',
-                        labels: {
-                            show: true,
-                            total: {
-                                show: true,
-                                showAlways: true,
-                                formatter: function(w) {
-                                    const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-                                    return 'Rp ' + formatNumber(total);
-                                },
-                                fontSize: '16px',
-                                fontWeight: 'bold'
-                            }
-                        }
-                    }
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            legend: {
-                show: false
-            },
-            responsive: [{
-                breakpoint: 480,
-                options: {
-                    chart: {
-                        width: 200
-                    },
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }],
-            tooltip: {
-                y: {
-                    formatter: function(value) {
-                        return 'Rp ' + formatNumber(value);
-                    }
-                }
-            }
-        };
-
-        // Create the expense chart
-        try {
-            if (document.getElementById('expenseChart')) {
-                if (expenseChartData && expenseChartData.length > 0) {
-                    var expenseChart = new ApexCharts(document.getElementById('expenseChart'), expenseChartOptions);
-                    expenseChart.render();
-                } else {
-                    document.getElementById('expenseChart').innerHTML =
-                        '<div class="text-center py-5"><span class="fs-6 text-gray-500">Tidak ada data pengeluaran untuk ditampilkan</span></div>';
-                }
-            }
-        } catch (error) {
-            console.error("Error rendering expense chart:", error);
-            if (document.getElementById('expenseChart')) {
-                document.getElementById('expenseChart').innerHTML =
-                    '<div class="text-center py-5"><span class="fs-6 text-gray-500">Terjadi kesalahan saat memuat grafik</span></div>';
-            }
-        }
-
-        // Format numbers with thousand separator
-        function formatNumber(number) {
-            return new Intl.NumberFormat('id-ID').format(number);
-        }
-
-        // Handle period change for sales chart
-        if (document.getElementById('periodSelect')) {
-            document.getElementById('periodSelect').addEventListener('change', function() {
-                const period = this.value;
-
-                try {
-                    if (typeof salesChart !== 'undefined' && salesChart) {
-                        // Show loading state
-                        salesChart.updateOptions({
-                            chart: {
-                                animations: {
-                                    enabled: false
-                                }
-                            }
-                        });
-                    }
-
-                    // Get updated data via AJAX
-                    fetch(`{{ route('dashboard.data') }}?period=${period}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            try {
-                                if (typeof salesChart !== 'undefined' && salesChart) {
-                                    // Update chart data
-                                    const chartData = data.chartData.data || [];
-                                    const chartLabels = data.chartData.labels || [];
-
-                                    salesChart.updateSeries([{
-                                        name: 'Penjualan',
-                                        data: chartData
-                                    }]);
-
-                                    // Update chart categories
-                                    salesChart.updateOptions({
-                                        xaxis: {
-                                            categories: chartLabels
-                                        },
-                                        chart: {
-                                            animations: {
-                                                enabled: true
-                                            }
-                                        }
-                                    });
-                                }
-                            } catch (updateError) {
-                                console.error("Error updating chart:", updateError);
-                            }
-
-                            // Update summary values
-                            if (document.getElementById('chartTotalSales')) {
-                                document.getElementById('chartTotalSales').textContent = data.totalSales;
-                            }
-                            if (document.getElementById('chartTotalExpenses')) {
-                                document.getElementById('chartTotalExpenses').textContent = data.totalExpenses;
-                            }
-                            if (document.getElementById('chartNetProfit')) {
-                                document.getElementById('chartNetProfit').textContent = data.netProfit;
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error fetching chart data:', error);
-                        });
-                } catch (eventError) {
-                    console.error("Error in period change event:", eventError);
-                }
-            });
-        }
-    </script>
-@endpush

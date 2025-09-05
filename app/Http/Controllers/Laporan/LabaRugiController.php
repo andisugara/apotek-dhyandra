@@ -1,0 +1,184 @@
+<?php
+
+namespace App\Http\Controllers\Laporan;
+
+use App\Http\Controllers\Controller;
+use App\Models\Penjualan;
+use App\Models\PenjualanDetail;
+use App\Models\Pengeluaran;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+class LabaRugiController extends Controller
+{
+    /**
+     * Display profit and loss report
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function index(Request $request)
+    {
+        // Get date range from request, default to current month
+        $dateRange = $request->input(
+            'date_range',
+            Carbon::now()->startOfMonth()->format('Y-m-d') . ' - ' .
+                Carbon::now()->endOfMonth()->format('Y-m-d')
+        );
+
+        // Parse the date range
+        $dates = explode(' - ', $dateRange);
+        $startDate = $dates[0];
+        $endDate = $dates[1] ?? $dates[0];
+
+        // Get all sales in date range
+        $sales = Penjualan::whereBetween('tanggal_penjualan', [$startDate, $endDate])
+            ->get();
+
+        $totalRevenue = $sales->sum('grand_total');
+
+        // Calculate cost of goods sold by joining with obat_satuan table
+        $costOfGoodsSold = DB::table('penjualan_details')
+            ->join('obat_satuan', function ($join) {
+                $join->on('penjualan_details.obat_id', '=', 'obat_satuan.obat_id')
+                    ->on('penjualan_details.satuan_id', '=', 'obat_satuan.satuan_id');
+            })
+            ->whereIn('penjualan_details.penjualan_id', $sales->pluck('id'))
+            ->sum(DB::raw('obat_satuan.harga_beli * penjualan_details.jumlah'));
+
+        // Get all expenses in date range
+        $expenses = Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])->get();
+        $totalExpenses = $expenses->sum('jumlah');
+
+        // Calculate profits
+        $grossProfit = $totalRevenue - $costOfGoodsSold;
+        $netProfit = $grossProfit - $totalExpenses;
+
+        // Calculate financial ratios
+        $grossProfitMargin = $totalRevenue > 0 ? ($grossProfit / $totalRevenue) * 100 : 0;
+        $netProfitMargin = $totalRevenue > 0 ? ($netProfit / $totalRevenue) * 100 : 0;
+        $expenseRatio = $totalRevenue > 0 ? ($totalExpenses / $totalRevenue) * 100 : 0;
+
+        return view('laporan.laba_rugi.index', compact(
+            'startDate',
+            'endDate',
+            'totalRevenue',
+            'costOfGoodsSold',
+            'expenses',
+            'totalExpenses',
+            'grossProfit',
+            'netProfit',
+            'grossProfitMargin',
+            'netProfitMargin',
+            'expenseRatio'
+        ));
+    }
+
+    /**
+     * Generate PDF report
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function generatePdf(Request $request)
+    {
+        // Get date range from request parameters
+        $startDate = $request->input('startDate', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('endDate', Carbon::now()->endOfMonth()->format('Y-m-d'));
+
+        // Get data like in index method
+        $sales = Penjualan::whereBetween('tanggal_penjualan', [$startDate, $endDate])
+            ->get();
+
+        $totalRevenue = $sales->sum('total');
+
+        $costOfGoodsSold = DB::table('penjualan_details')
+            ->join('obat_satuan', function ($join) {
+                $join->on('penjualan_details.obat_id', '=', 'obat_satuan.obat_id')
+                    ->on('penjualan_details.satuan_id', '=', 'obat_satuan.satuan_id');
+            })
+            ->whereIn('penjualan_details.penjualan_id', $sales->pluck('id'))
+            ->sum(DB::raw('obat_satuan.harga_beli * penjualan_details.jumlah'));
+
+        $expenses = Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])->get();
+        $totalExpenses = $expenses->sum('jumlah');
+
+        $grossProfit = $totalRevenue - $costOfGoodsSold;
+        $netProfit = $grossProfit - $totalExpenses;
+
+        $grossProfitMargin = $totalRevenue > 0 ? ($grossProfit / $totalRevenue) * 100 : 0;
+        $netProfitMargin = $totalRevenue > 0 ? ($netProfit / $totalRevenue) * 100 : 0;
+        $expenseRatio = $totalRevenue > 0 ? ($totalExpenses / $totalRevenue) * 100 : 0;
+
+        // Generate PDF
+        $pdf = Pdf::loadView('laporan.laba_rugi.pdf', compact(
+            'startDate',
+            'endDate',
+            'totalRevenue',
+            'costOfGoodsSold',
+            'expenses',
+            'totalExpenses',
+            'grossProfit',
+            'netProfit',
+            'grossProfitMargin',
+            'netProfitMargin',
+            'expenseRatio'
+        ));
+
+        // Download the PDF file
+        return $pdf->download('laporan-laba-rugi-' . Carbon::now()->format('dmY') . '.pdf');
+    }
+
+    /**
+     * Display printable version of the report
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function print(Request $request)
+    {
+        // Get date range from request parameters
+        $startDate = $request->input('startDate', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('endDate', Carbon::now()->endOfMonth()->format('Y-m-d'));
+
+        // Get all the same data as in the PDF method
+        $sales = Penjualan::whereBetween('tanggal_penjualan', [$startDate, $endDate])
+            ->get();
+
+        $totalRevenue = $sales->sum('total');
+
+        $costOfGoodsSold = DB::table('penjualan_details')
+            ->join('obat_satuan', function ($join) {
+                $join->on('penjualan_details.obat_id', '=', 'obat_satuan.obat_id')
+                    ->on('penjualan_details.satuan_id', '=', 'obat_satuan.satuan_id');
+            })
+            ->whereIn('penjualan_details.penjualan_id', $sales->pluck('id'))
+            ->sum(DB::raw('obat_satuan.harga_beli * penjualan_details.jumlah'));
+
+        $expenses = Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])->get();
+        $totalExpenses = $expenses->sum('jumlah');
+
+        $grossProfit = $totalRevenue - $costOfGoodsSold;
+        $netProfit = $grossProfit - $totalExpenses;
+
+        $grossProfitMargin = $totalRevenue > 0 ? ($grossProfit / $totalRevenue) * 100 : 0;
+        $netProfitMargin = $totalRevenue > 0 ? ($netProfit / $totalRevenue) * 100 : 0;
+        $expenseRatio = $totalRevenue > 0 ? ($totalExpenses / $totalRevenue) * 100 : 0;
+
+        return view('laporan.laba_rugi.print', compact(
+            'startDate',
+            'endDate',
+            'totalRevenue',
+            'costOfGoodsSold',
+            'expenses',
+            'totalExpenses',
+            'grossProfit',
+            'netProfit',
+            'grossProfitMargin',
+            'netProfitMargin',
+            'expenseRatio'
+        ));
+    }
+}

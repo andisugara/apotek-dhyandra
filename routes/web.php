@@ -14,8 +14,10 @@ use App\Http\Controllers\PenjualanController;
 use App\Http\Controllers\ReturPembelianController;
 use App\Http\Controllers\SatuanObatController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Laporan\LabaRugiController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication routes
@@ -33,6 +35,7 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/data', [DashboardController::class, 'getUpdatedData'])->name('dashboard.data');
 });
 
 // Routes for Superadmin only
@@ -99,4 +102,23 @@ Route::middleware(['auth'])->group(function () {
     Route::match(['put', 'patch'], 'settings', [SettingController::class, 'update'])
         ->name('settings.update')
         ->middleware('role:Superadmin');
+
+    // Laporan Laba Rugi routes
+    Route::get('laporan/laba-rugi', [LabaRugiController::class, 'index'])->name('laporan.laba-rugi.index');
+    Route::get('laporan/laba-rugi/pdf', [LabaRugiController::class, 'generatePdf'])->name('laporan.laba-rugi.pdf');
+    Route::get('laporan/laba-rugi/print', [LabaRugiController::class, 'print'])->name('laporan.laba-rugi.print');
+
+    // laporan penjualan
+    Route::get('laporan/penjualan', [PenjualanController::class, 'index'])->name('laporan.penjualan.index');
+    Route::get('laporan/penjualan/pdf', [PenjualanController::class, 'generatePdf'])->name('laporan.penjualan.pdf');
+    Route::get('laporan/penjualan/print', [PenjualanController::class, 'print'])->name('laporan.penjualan.print');
+
+    // Stock Opname
+    Route::resource('stock_opname', StockOpnameController::class);
+    Route::post('stock_opname/search-obat', [StockOpnameController::class, 'searchObat'])->name('stock_opname.search_obat');
+    Route::post('stock_opname/get-stok-detail', [StockOpnameController::class, 'getStokDetail'])->name('stock_opname.get_stok_detail');
+    Route::post('stock_opname/{stockOpname}/add-obat', [StockOpnameController::class, 'addObat'])->name('stock_opname.add_obat');
+    Route::delete('stock_opname/{stockOpname}/remove-obat/{detail}', [StockOpnameController::class, 'removeObat'])->name('stock_opname.remove_obat');
+    Route::put('stock_opname/{stockOpname}/complete', [StockOpnameController::class, 'complete'])->name('stock_opname.complete');
+    Route::get('stock_opname/{stockOpname}/print', [StockOpnameController::class, 'print'])->name('stock_opname.print');
 });

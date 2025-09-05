@@ -12,7 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PDF;
+use Illuminate\Support\Facades\App;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PenjualanController extends Controller
 {
@@ -146,7 +147,7 @@ class PenjualanController extends Controller
             if ($penjualan->jenis === 'TUNAI') {
                 // Get kas akun (adjust as needed based on your system)
                 $kasAkunId = 1; // Default, adjust this based on your system setup
-                $pendapatanAkunId = 2; // Akun pendapatan penjualan, sesuaikan dengan sistem Anda
+                $pendapatanAkunId = 1; // Akun pendapatan penjualan, sesuaikan dengan sistem Anda
 
                 // 1. Jurnal kas - Uang masuk ke kas (debit)
                 TransaksiAkun::create([
@@ -176,7 +177,14 @@ class PenjualanController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('penjualan.index')->with('success', 'Transaksi penjualan berhasil ditambahkan');
+
+            // Cek apakah perlu cetak struk
+            if ($request->has('cetak_struk')) {
+                // Redirect ke halaman print struk
+                return redirect()->route('penjualan.print', $penjualan->id);
+            } else {
+                return redirect()->route('penjualan.index')->with('success', 'Transaksi penjualan berhasil ditambahkan');
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating penjualan: ' . $e->getMessage());
@@ -217,8 +225,26 @@ class PenjualanController extends Controller
 
         $setting = getSetting();
 
-        // Render the view directly as a response
-        return view('penjualan.print', compact('penjualan', 'setting'));
+        // Set custom paper size for thermal printer (58mm width)
+        // 58mm = ~210 points (72 points per inch), width for standard 58mm thermal paper
+        // The height is set large enough to accommodate the entire content
+        $customPaper = array(0, 0, 210, 800);
+
+        // Generate PDF with the custom paper size using the Pdf facade
+        $pdf = Pdf::setPaper($customPaper, 'portrait');
+
+        // Configure DomPDF options for better thermal printing results
+        $pdf->setOption('defaultFont', 'sans-serif');
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isFontSubsettingEnabled', true);
+
+        $pdf->loadView('penjualan.print', compact('penjualan', 'setting'));
+
+        // Return the PDF as a download with a filename based on invoice number
+        return $pdf->stream("struk-{$penjualan->no_faktur}.pdf", [
+            'Attachment' => false // Set to true to force download, false to open in browser
+        ]);
     }
 
     /**
@@ -321,8 +347,8 @@ class PenjualanController extends Controller
                                 ] : null
                             ],
                             'total_stok' => $satuanTotalStock,
-                            'kategori' => $obat->kategori ? $obat->kategori->nama_kategori : '-',
-                            'golongan' => $obat->golongan ? $obat->golongan->nama_golongan : '-'
+                            'kategori' => $obat->kategori ? $obat->kategori->nama : '-',
+                            'golongan' => $obat->golongan ? $obat->golongan->nama : '-'
                         ]
                     ];
                 }

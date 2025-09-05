@@ -23,6 +23,24 @@
                 </div>
 
                 <div class="row mb-6">
+                    <label for="akun_id" class="col-lg-2 col-form-label required fw-semibold fs-6">Akun</label>
+                    <div class="col-lg-8 fv-row">
+                        <select name="akun_id" id="akun_id" class="form-select @error('akun_id') is-invalid @enderror"
+                            required>
+                            <option value="">Pilih Akun</option>
+                            @foreach ($akuns as $akun)
+                                <option value="{{ $akun->id }}" {{ old('akun_id') == $akun->id ? 'selected' : '' }}>
+                                    {{ $akun->kode }} - {{ $akun->nama }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('akun_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="row mb-6">
                     <label for="tanggal" class="col-lg-2 col-form-label required fw-semibold fs-6">Tanggal</label>
                     <div class="col-lg-8 fv-row">
                         <input type="date" name="tanggal" id="tanggal"

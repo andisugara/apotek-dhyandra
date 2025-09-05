@@ -73,8 +73,8 @@ if (!function_exists('getMenu')) {
                     'title' => 'Laporan',
                     'icon'  => 'ki-file',
                     'children' => [
-                        ['title' => 'Laporan Penjualan', 'route' => 'laporan_penjualan.index'],
-                        ['title' => 'Laporan Laba Rugi', 'route' => 'laporan_laba_rugi.index'],
+                        // ['title' => 'Laporan Penjualan', 'route' => 'laporan.penjualan.index'],
+                        ['title' => 'Laporan Laba Rugi', 'route' => 'laporan.laba-rugi.index'],
                     ],
                 ];
 

@@ -25,7 +25,7 @@
 
                 <div class="row">
                     <!-- Left side - Form fields -->
-                    <div class="col-md-7">
+                    <div class="col-md-8">
                         <div class="card mb-5 mb-xl-10">
                             <div class="card-header">
                                 <div class="card-title">
@@ -75,7 +75,7 @@
                     </div>
 
                     <!-- Right side - Info and Payment -->
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <!-- Transaction Info Card -->
                         <div class="card mb-5 mb-xl-10">
                             <div class="card-header">
@@ -206,6 +206,14 @@
                                         <span id="kembalianDisplay" class="fw-bold">Rp 0</span>
                                         <input type="hidden" name="kembalian" id="kembalian" value="0">
                                     </div>
+                                </div>
+
+                                <div class="form-check form-check-custom form-check-solid mb-5">
+                                    <input class="form-check-input" type="checkbox" value="1" id="cetakStruk"
+                                        name="cetak_struk" checked />
+                                    <label class="form-check-label" for="cetakStruk">
+                                        Cetak struk setelah transaksi (default)
+                                    </label>
                                 </div>
 
                                 <div class="d-flex justify-content-center">
