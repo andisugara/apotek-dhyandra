@@ -146,16 +146,31 @@ class PenjualanController extends Controller
             if ($penjualan->jenis === 'TUNAI') {
                 // Get kas akun (adjust as needed based on your system)
                 $kasAkunId = 1; // Default, adjust this based on your system setup
+                $pendapatanAkunId = 2; // Akun pendapatan penjualan, sesuaikan dengan sistem Anda
 
+                // 1. Jurnal kas - Uang masuk ke kas (debit)
                 TransaksiAkun::create([
                     'akun_id' => $kasAkunId,
                     'tanggal' => $penjualan->tanggal_penjualan,
                     'kode_referensi' => 'PNJ-' . $penjualan->id,
                     'tipe_referensi' => 'PENJUALAN',
                     'referensi_id' => $penjualan->id,
-                    'deskripsi' => 'Penjualan obat dengan no faktur ' . $penjualan->no_faktur,
+                    'deskripsi' => 'Penerimaan kas dari penjualan dengan no faktur ' . $penjualan->no_faktur,
                     'debit' => $penjualan->grand_total,
                     'kredit' => 0,
+                    'user_id' => Auth::id()
+                ]);
+
+                // 2. Jurnal pendapatan - Pendapatan penjualan (kredit)
+                TransaksiAkun::create([
+                    'akun_id' => $pendapatanAkunId,
+                    'tanggal' => $penjualan->tanggal_penjualan,
+                    'kode_referensi' => 'PNJ-' . $penjualan->id,
+                    'tipe_referensi' => 'PENJUALAN',
+                    'referensi_id' => $penjualan->id,
+                    'deskripsi' => 'Pendapatan penjualan obat dengan no faktur ' . $penjualan->no_faktur,
+                    'debit' => 0,
+                    'kredit' => $penjualan->grand_total,
                     'user_id' => Auth::id()
                 ]);
             }

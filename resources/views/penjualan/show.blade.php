@@ -103,7 +103,7 @@
                                         <td>{{ $detail->no_batch }}</td>
                                         <td>{{ $detail->tanggal_expired ? $detail->tanggal_expired->format('d/m/Y') : '-' }}
                                         </td>
-                                        <td>{{ $detail->satuan->nama_satuan }}</td>
+                                        <td>{{ $detail->satuan->nama }}</td>
                                         <td>Rp {{ $detail->formatted_harga }}</td>
                                         <td>{{ $detail->jumlah }}</td>
                                         <td>Rp {{ $detail->formatted_diskon }}</td>

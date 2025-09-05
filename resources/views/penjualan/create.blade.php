@@ -192,8 +192,9 @@
                                 <div class="row mb-3">
                                     <div class="col-12">
                                         <label class="form-label required">Bayar</label>
-                                        <input type="text" class="form-control" name="bayar" id="bayar"
-                                            required value="0">
+                                        <input type="text" class="form-control" id="bayar" required
+                                            placeholder="Masukkan jumlah pembayaran">
+                                        <input type="hidden" name="bayar" id="bayar_hidden" value="0">
                                     </div>
                                 </div>
 
@@ -517,14 +518,42 @@
                 }
             });
 
-            // Format currency inputs
-            $('#bayar').inputmask('currency', {
-                radixPoint: ',',
-                groupSeparator: '.',
-                digits: 0,
-                prefix: 'Rp '
-            }); // Update kembalian when payment amount changes
-            $('#bayar').on('change', function() {
+            // Gunakan pendekatan yang lebih sederhana untuk input pembayaran
+            $('#bayar').on('input', function() {
+                // Hapus semua karakter non-digit
+                let cleanValue = $(this).val().replace(/[^\d]/g, '');
+
+                // Pastikan nilai tidak kosong
+                if (cleanValue === '') {
+                    cleanValue = '0';
+                }
+
+                // Parse ke integer untuk menghilangkan leading zeros
+                const numericValue = parseInt(cleanValue);
+
+                // Format nilai dengan currency format
+                $(this).val('Rp ' + formatNumber(numericValue));
+
+                // Simpan nilai numerik di data attribute untuk perhitungan kembalian
+                $(this).data('numeric-value', numericValue);
+
+                // Update kembalian
+                calculateKembalian();
+            });
+
+            // Set nilai awal
+            $('#bayar').val('Rp 0').data('numeric-value', 0);
+
+            // Focus pada input bayar saat user mengklik label atau elemen parent
+            $('.form-label:contains("Bayar")').on('click', function() {
+                $('#bayar').focus().select();
+            });
+
+            // Seleksi isi input saat diklik
+            $('#bayar').on('focus', function() {
+                $(this).select();
+            });
+            $('#bayar').on('input change', function() {
                 calculateKembalian();
             });
 
@@ -538,6 +567,7 @@
             // Update totals when quantity changes
             $(document).on('change', '.jumlah, .diskon-persen', function() {
                 calculateRowTotal($(this).closest('tr'));
+                calculateTotals(); // Update grand total after row calculation
             }); // Form submission validation
             $('#penjualanForm').on('submit', function(e) {
                 if ($('#cartItems .item-row').length === 0) {
@@ -553,10 +583,18 @@
                     return false;
                 }
 
+                // Set nilai bayar_hidden dari data-attribute sebelum submit
+                $('#bayar_hidden').val($('#bayar').data('numeric-value') || 0);
+
                 // For cash payments, ensure payment is enough
                 if ($('input[name="jenis"]:checked').val() === 'TUNAI') {
                     const grandTotal = parseFloat($('#grand_total').val());
-                    const bayar = parseCurrency($('#bayar').val());
+                    const bayar = $('#bayar').data('numeric-value') || 0;
+
+                    console.log('Payment validation:', {
+                        grandTotal,
+                        bayar
+                    });
 
                     if (bayar < grandTotal) {
                         e.preventDefault();
@@ -700,6 +738,15 @@
             const diskon = (diskonPersen / 100) * subtotal;
             const total = subtotal - diskon;
 
+            console.log('Row calculation:', {
+                quantity,
+                harga,
+                diskonPersen,
+                subtotal,
+                diskon,
+                total
+            });
+
             // Update hidden inputs
             row.find('.item-subtotal').val(subtotal.toFixed(2));
             row.find('.diskon').val(diskon.toFixed(2));
@@ -730,13 +777,30 @@
             let totalDiskon = 0;
             let totalPpn = 0; // Keeping this for compatibility, but will be zero
 
+            console.log('Starting total calculation...');
+
             $('#cartItems .item-row').each(function() {
-                subtotal += parseFloat($(this).find('.item-subtotal').val() || 0);
-                totalDiskon += parseFloat($(this).find('.diskon').val() || 0);
+                const rowSubtotal = parseFloat($(this).find('.item-subtotal').val() || 0);
+                const rowDiskon = parseFloat($(this).find('.diskon').val() || 0);
+
+                console.log('Row values:', {
+                    qty: $(this).find('.jumlah').val(),
+                    price: $(this).find('.harga').val(),
+                    subtotal: rowSubtotal,
+                    diskon: rowDiskon
+                });
+
+                subtotal += rowSubtotal;
+                totalDiskon += rowDiskon;
                 // PPN already included in price, so no need to add it
             });
 
             const grandTotal = subtotal - totalDiskon;
+            console.log('Final calculation:', {
+                subtotal,
+                totalDiskon,
+                grandTotal
+            });
 
             // Update totals display
             $('#subtotal').val(subtotal.toFixed(2));
@@ -759,8 +823,15 @@
         // Calculate kembalian
         function calculateKembalian() {
             const grandTotal = parseFloat($('#grand_total').val() || 0);
-            const bayar = parseCurrency($('#bayar').val() || 0);
+            // Gunakan nilai yang disimpan di data-attribute
+            const bayar = $('#bayar').data('numeric-value') || 0;
             const kembalian = Math.max(0, bayar - grandTotal);
+
+            console.log('Kembalian calculation:', {
+                grandTotal,
+                bayar,
+                kembalian
+            });
 
             $('#kembalian').val(kembalian.toFixed(2));
             $('#kembalianDisplay').text('Rp ' + formatNumber(kembalian));
@@ -779,11 +850,35 @@
         // Parse currency string back to number
         function parseCurrency(str) {
             // Handle potential invalid inputs
-            if (!str || typeof str !== 'string') {
-                console.warn("Invalid currency string:", str);
+            if (!str) {
+                console.warn("Empty currency string");
                 return 0;
             }
-            return parseFloat(str.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+
+            // Handle different types
+            if (typeof str === 'number') return str;
+
+            if (typeof str !== 'string') {
+                console.warn("Invalid currency string type:", typeof str);
+                return 0;
+            }
+
+            // Try to extract the numeric value, handling both with and without Rp prefix
+            try {
+                // Remove Rp prefix, dots as thousand separators, and convert comma to dot for decimal
+                const numericStr = str.replace(/[Rp\s]/g, '').replace(/\./g, '').replace(',', '.');
+                const value = parseFloat(numericStr);
+
+                if (isNaN(value)) {
+                    console.warn("Failed to parse currency:", str, "→", numericStr);
+                    return 0;
+                }
+
+                return value;
+            } catch (e) {
+                console.error("Error parsing currency:", str, e);
+                return 0;
+            }
         }
 
         // Format date
