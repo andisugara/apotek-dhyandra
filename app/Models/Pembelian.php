@@ -61,7 +61,7 @@ class Pembelian extends Model
         return $this->hasMany(TransaksiAkun::class, 'referensi_id')
             ->where('tipe_referensi', 'PEMBELIAN');
     }
-    
+
     public function returPembelians()
     {
         return $this->hasMany(ReturPembelian::class);

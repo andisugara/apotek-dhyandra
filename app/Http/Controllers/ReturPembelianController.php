@@ -13,6 +13,7 @@ use App\Models\LokasiObat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\Facades\DataTables;
 
 class ReturPembelianController extends Controller
@@ -62,22 +63,187 @@ class ReturPembelianController extends Controller
     }
 
     /**
-     * Search for pembelian by nomor faktur for the retur process.
+     * Search for pembelian by nomor faktur for Select2.
+     */
+    public function searchSelect2(Request $request)
+    {
+        try {
+            $search = $request->input('search', '');
+            $page = (int)$request->input('page', 1);
+            $perPage = 10;
+
+            $query = Pembelian::with(['supplier', 'details.returDetails'])
+                ->where(function ($q) use ($search) {
+                    if ($search) {
+                        $q->where('no_faktur', 'like', '%' . $search . '%');
+                    }
+                })
+                ->orderBy('tanggal_faktur', 'desc');
+
+            $total = $query->count();
+
+            $results = $query->skip(($page - 1) * $perPage)
+                ->take($perPage)
+                ->get();
+
+            $data = [];
+            foreach ($results as $pembelian) {
+                // Check if the pembelian has details
+                if (!$pembelian->details || $pembelian->details->isEmpty()) {
+                    continue;
+                }
+
+                // Check if any items are returnable
+                $hasReturnableItems = false;
+                foreach ($pembelian->details as $detail) {
+                    // Calculate returned quantity - handle potential relationship issues
+                    $returnedQty = 0;
+                    if ($detail->returDetails) {
+                        $returnedQty = $detail->returDetails->sum('jumlah');
+                    }
+
+                    $remainingQty = $detail->jumlah - $returnedQty;
+                    if ($remainingQty > 0) {
+                        $hasReturnableItems = true;
+                        break;
+                    }
+                }
+
+                if ($hasReturnableItems) {
+                    $data[] = [
+                        'id' => $pembelian->id,
+                        'text' => $pembelian->no_faktur,
+                        'no_faktur' => $pembelian->no_faktur,
+                        'tanggal_faktur' => $pembelian->tanggal_faktur,
+                        'supplier' => $pembelian->supplier
+                    ];
+                }
+            }
+
+            return response()->json([
+                'data' => $data,
+                'pagination' => [
+                    'more' => $total > ($page * $perPage)
+                ],
+                'total_count' => $total,
+                'current_page' => $page,
+                'last_page' => ceil($total / $perPage)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'data' => [],
+                'pagination' => ['more' => false]
+            ]);
+        }
+    }
+
+    /**
+     * Search for pembelian by ID for the retur process.
+     */
+    public function searchById(Request $request)
+    {
+        try {
+            $pembelianId = $request->input('pembelian_id');
+
+            // Search for pembelian with the given ID
+            $pembelian = Pembelian::with([
+                'supplier',
+                'details.obat',
+                'details.satuan',
+                'details.stok.lokasi',
+                'details.returDetails'
+            ])
+                ->find($pembelianId);
+
+            if (!$pembelian) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembelian tidak ditemukan.'
+                ]);
+            }
+
+            // Make sure details is initialized
+            if (!$pembelian->details) {
+                $pembelian->details = [];
+            }
+
+            // Check if there are returnable items and calculate quantities
+            $hasReturnableItems = false;
+            foreach ($pembelian->details as $detail) {
+                // Calculate already returned quantity - handle potential relationship issues
+                $returnedQty = 0;
+                if (method_exists($detail, 'returDetails') && $detail->returDetails) {
+                    $returnedQty = $detail->returDetails->sum('jumlah');
+                }
+
+                // Calculate remaining quantity that can be returned
+                $remainingQty = $detail->jumlah - $returnedQty;
+
+                // Store both values on the detail object
+                $detail->remaining_qty = $remainingQty;
+                $detail->returned_qty = $returnedQty;
+
+                if ($remainingQty > 0) {
+                    $hasReturnableItems = true;
+                }
+
+                // Ensure stock relationship is loaded
+                if (!$detail->stok || $detail->stok->isEmpty()) {
+                    // Create an empty stock array to prevent JavaScript errors
+                    $detail->stok = [];
+                }
+
+                // Check for relationship issues that might cause JavaScript errors
+                if (!$detail->obat) {
+                    // Log this issue for debugging
+                    Log::warning('Missing obat relationship for pembelian_detail_id: ' . $detail->id);
+                }
+
+                if (!$detail->satuan) {
+                    Log::warning('Missing satuan relationship for pembelian_detail_id: ' . $detail->id);
+                }
+            }
+
+            if (!$hasReturnableItems) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Semua item pada pembelian ini sudah diretur sepenuhnya.'
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'pembelian' => $pembelian
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in searchById: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Search for pembelian by nomor faktur for the retur process (legacy).
      */
     public function searchPembelian(Request $request)
     {
         $noFaktur = $request->input('no_faktur');
-        
+
         // Search for pembelian with the given nomor faktur
         $pembelian = Pembelian::with([
-                'supplier', 
-                'details.obat', 
-                'details.satuan',
-                'details.stok'
-            ])
+            'supplier',
+            'details.obat',
+            'details.satuan',
+            'details.stok'
+        ])
             ->where('no_faktur', 'like', '%' . $noFaktur . '%')
             ->first();
-            
+
         if (!$pembelian) {
             return response()->json([
                 'success' => false,
@@ -90,13 +256,13 @@ class ReturPembelianController extends Controller
         foreach ($pembelian->details as $detail) {
             // Calculate already returned quantity
             $returnedQty = $detail->returDetails()->sum('jumlah');
-            
+
             // Calculate remaining quantity that can be returned
             $remainingQty = $detail->jumlah - $returnedQty;
-            
+
             if ($remainingQty > 0) {
                 $hasReturnableItems = true;
-                
+
                 // Add remaining qty to the detail object
                 $detail->remaining_qty = $remainingQty;
             } else {
@@ -122,6 +288,7 @@ class ReturPembelianController extends Controller
      */
     public function store(Request $request)
     {
+
         // Validate main retur data
         $rules = [
             'pembelian_id' => 'required|exists:pembelian,id',
@@ -131,13 +298,27 @@ class ReturPembelianController extends Controller
             'detail.*.pembelian_detail_id' => 'required|exists:pembelian_detail,id',
             'detail.*.obat_id' => 'required|exists:obat,id',
             'detail.*.satuan_id' => 'required|exists:satuan_obat,id',
-            'detail.*.jumlah' => 'required|integer|min:1',
+            'detail.*.jumlah' => 'required|integer|min:0', // Changed to min:0 to allow 0 quantities
             'detail.*.no_batch' => 'required|string',
             'detail.*.lokasi_id' => 'required|exists:lokasi_obat,id',
         ];
 
+
         // Validate the request
         $validated = $request->validate($rules);
+
+        // Filter out items with 0 quantity
+        $detailsWithQuantity = array_filter($validated['detail'], function ($item) {
+            return intval($item['jumlah']) > 0;
+        });
+
+        // Check if there's at least one item with quantity > 0
+        if (empty($detailsWithQuantity)) {
+            return redirect()->back()->with('error', 'Minimal satu item harus memiliki jumlah retur lebih dari 0')->withInput();
+        }
+
+        // Replace the original details with filtered ones
+        $validated['detail'] = $detailsWithQuantity;
 
         DB::beginTransaction();
         try {
@@ -172,29 +353,39 @@ class ReturPembelianController extends Controller
 
             // Get the pembelian for calculating return values
             $pembelian = Pembelian::findOrFail($validated['pembelian_id']);
-            
+
             // Process detail items
             foreach ($validated['detail'] as $detail) {
-                // Skip items with 0 quantity
+                // All items should have quantity > 0 due to our earlier filter
+                // But let's keep this check for extra safety
                 if (intval($detail['jumlah']) <= 0) {
                     continue;
                 }
-                
+
                 // Get the original pembelian detail
                 $pembelianDetail = PembelianDetail::findOrFail($detail['pembelian_detail_id']);
-                
+
+                // Validate return quantity doesn't exceed available quantity
+                $returnedQty = $pembelianDetail->returDetails()->sum('jumlah');
+                $maxReturnQty = $pembelianDetail->jumlah - $returnedQty;
+                $requestedReturnQty = intval($detail['jumlah']);
+
+                if ($requestedReturnQty > $maxReturnQty) {
+                    throw new \Exception("Jumlah retur untuk item {$pembelianDetail->obat->nama_obat} melebihi stok yang tersedia");
+                }
+
                 // Calculate values
                 $hargaBeli = $pembelianDetail->harga_beli;
-                $jumlah = intval($detail['jumlah']);
+                $jumlah = $requestedReturnQty;
                 $subtotalItem = $hargaBeli * $jumlah;
-                
+
                 // Calculate PPN for this item based on the overall PPN percentage from the original purchase
-                $ppnPercentage = $pembelian->subtotal > 0 ? 
+                $ppnPercentage = $pembelian->subtotal > 0 ?
                     ($pembelian->ppn_total / $pembelian->subtotal) * 100 : 0;
-                
+
                 $ppnItem = ($ppnPercentage / 100) * $subtotalItem;
                 $totalItem = $subtotalItem + $ppnItem;
-                
+
                 // Create detail record
                 $returDetail = ReturPembelianDetail::create([
                     'retur_pembelian_id' => $returPembelian->id,
@@ -210,17 +401,23 @@ class ReturPembelianController extends Controller
                     'tanggal_expired' => $pembelianDetail->tanggal_expired,
                     'lokasi_id' => $detail['lokasi_id']
                 ]);
-                
+
                 // Update stock - reduce the quantity from the specific batch
                 $stok = Stok::where('pembelian_detail_id', $pembelianDetail->id)
                     ->where('no_batch', $detail['no_batch'])
                     ->first();
-                
+
                 if ($stok) {
+                    // Log the stock update
+                    Log::info("Updating stock for batch {$detail['no_batch']}, item {$pembelianDetail->obat->nama_obat}, old qty: {$stok->qty}, reducing by: {$jumlah}");
+
                     $stok->qty -= $jumlah;
                     $stok->save();
+                } else {
+                    // If stock record not found, log warning
+                    Log::warning("Stock record not found for batch {$detail['no_batch']}, pembelian_detail_id: {$pembelianDetail->id}");
                 }
-                
+
                 // Add to totals
                 $subtotal += $subtotalItem;
                 $grandTotal += $totalItem;
@@ -247,11 +444,13 @@ class ReturPembelianController extends Controller
                     'user_id' => Auth::id()
                 ]);
             }
-
             DB::commit();
             return redirect()->route('retur_pembelian.index')->with('success', 'Retur pembelian berhasil ditambahkan');
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Error creating retur pembelian: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
     }
@@ -262,14 +461,14 @@ class ReturPembelianController extends Controller
     public function show(string $id)
     {
         $returPembelian = ReturPembelian::with([
-                'pembelian.supplier',
-                'user',
-                'details.obat',
-                'details.satuan',
-                'details.lokasi',
-                'details.pembelianDetail',
-                'transaksiAkun'
-            ])
+            'pembelian.supplier',
+            'user',
+            'details.obat',
+            'details.satuan',
+            'details.lokasi',
+            'details.pembelianDetail',
+            'transaksiAkun'
+        ])
             ->findOrFail($id);
 
         return view('retur_pembelian.show', compact('returPembelian'));
@@ -289,7 +488,7 @@ class ReturPembelianController extends Controller
                 $stok = Stok::where('pembelian_detail_id', $detail->pembelian_detail_id)
                     ->where('no_batch', $detail->no_batch)
                     ->first();
-                
+
                 if ($stok) {
                     $stok->qty += $detail->jumlah;
                     $stok->save();

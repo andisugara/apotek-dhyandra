@@ -80,10 +80,12 @@ Route::middleware(['auth'])->group(function () {
     // Pembelian management
     Route::resource('pembelian', PembelianController::class);
     Route::get('pembelian/obat/{id}/satuans', [PembelianController::class, 'getObatSatuans']);
-    
+
     // Retur Pembelian management
-    Route::resource('retur_pembelian', ReturPembelianController::class)->except(['edit', 'update']);
     Route::post('retur_pembelian/search', [ReturPembelianController::class, 'searchPembelian'])->name('retur_pembelian.search');
+    Route::post('retur_pembelian/search_select2', [ReturPembelianController::class, 'searchSelect2'])->name('retur_pembelian.search_select2');
+    Route::post('retur_pembelian/search_by_id', [ReturPembelianController::class, 'searchById'])->name('retur_pembelian.search_by_id');
+    Route::resource('retur_pembelian', ReturPembelianController::class)->except(['edit', 'update']);
 
     // Settings management (view only for Apoteker, edit for Superadmin)
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');

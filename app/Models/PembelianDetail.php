@@ -63,7 +63,7 @@ class PembelianDetail extends Model
     {
         return $this->hasMany(Stok::class, 'pembelian_detail_id');
     }
-    
+
     public function returDetails()
     {
         return $this->hasMany(ReturPembelianDetail::class, 'pembelian_detail_id');
