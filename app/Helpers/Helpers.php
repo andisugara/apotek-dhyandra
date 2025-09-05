@@ -45,8 +45,8 @@ if (!function_exists('getMenu')) {
                     'title' => 'Pembelian',
                     'icon'  => 'ki-tag',
                     'children' => [
-                        ['title' => 'Pembelian Obat', 'route' => 'pembelian_obat.index'],
-                        ['title' => 'Retur Obat', 'route' => 'retur_obat.index'],
+                        ['title' => 'Pembelian Obat', 'route' => 'pembelian.index'],
+                        ['title' => 'Retur Obat', 'route' => 'retur_pembelian.index'],
                     ],
                 ];
 

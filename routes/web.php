@@ -8,7 +8,9 @@ use App\Http\Controllers\LokasiObatController;
 use App\Http\Controllers\ObatController;
 use App\Http\Controllers\PabrikController;
 use App\Http\Controllers\PasienController;
+use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\PengeluaranController;
+use App\Http\Controllers\ReturPembelianController;
 use App\Http\Controllers\SatuanObatController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SupplierController;
@@ -74,6 +76,14 @@ Route::middleware(['role:Superadmin'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     // Pengeluaran management
     Route::resource('pengeluaran', PengeluaranController::class);
+
+    // Pembelian management
+    Route::resource('pembelian', PembelianController::class);
+    Route::get('pembelian/obat/{id}/satuans', [PembelianController::class, 'getObatSatuans']);
+    
+    // Retur Pembelian management
+    Route::resource('retur_pembelian', ReturPembelianController::class)->except(['edit', 'update']);
+    Route::post('retur_pembelian/search', [ReturPembelianController::class, 'searchPembelian'])->name('retur_pembelian.search');
 
     // Settings management (view only for Apoteker, edit for Superadmin)
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
