@@ -57,8 +57,32 @@ class Obat extends Model
         return $this->hasMany(ObatSatuan::class, 'obat_id');
     }
 
+    public function satuan()
+    {
+        return $this->hasManyThrough(
+            SatuanObat::class,
+            ObatSatuan::class,
+            'obat_id', // Foreign key on ObatSatuan table...
+            'id', // Foreign key on SatuanObat table...
+            'id', // Local key on Obat table...
+            'satuan_id' // Local key on ObatSatuan table...
+        )->distinct();
+    }
+
     public function stok()
     {
         return $this->hasMany(Stok::class, 'obat_id');
+    }
+
+    public function lokasi()
+    {
+        return $this->hasManyThrough(
+            LokasiObat::class,
+            Stok::class,
+            'obat_id', // Foreign key on Stok table...
+            'id', // Foreign key on LokasiObat table...
+            'id', // Local key on Obat table...
+            'lokasi_id' // Local key on Stok table...
+        )->distinct();
     }
 }

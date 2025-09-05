@@ -10,6 +10,7 @@ use App\Http\Controllers\PabrikController;
 use App\Http\Controllers\PasienController;
 use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\PengeluaranController;
+use App\Http\Controllers\PenjualanController;
 use App\Http\Controllers\ReturPembelianController;
 use App\Http\Controllers\SatuanObatController;
 use App\Http\Controllers\SettingController;
@@ -86,6 +87,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('retur_pembelian/search_select2', [ReturPembelianController::class, 'searchSelect2'])->name('retur_pembelian.search_select2');
     Route::post('retur_pembelian/search_by_id', [ReturPembelianController::class, 'searchById'])->name('retur_pembelian.search_by_id');
     Route::resource('retur_pembelian', ReturPembelianController::class)->except(['edit', 'update']);
+
+    // Penjualan management
+    Route::get('penjualan/{penjualan}/print', [PenjualanController::class, 'printPdf'])->name('penjualan.print');
+    Route::post('penjualan/search-obat', [PenjualanController::class, 'searchObat'])->name('penjualan.search_obat');
+    Route::post('penjualan/get-stok-detail', [PenjualanController::class, 'getStokDetail'])->name('penjualan.get_stok_detail');
+    Route::resource('penjualan', PenjualanController::class)->except(['edit', 'update', 'destroy']);
 
     // Settings management (view only for Apoteker, edit for Superadmin)
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');

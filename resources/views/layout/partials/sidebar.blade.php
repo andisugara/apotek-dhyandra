@@ -6,11 +6,11 @@
     <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
         <!--begin::Logo image-->
         <a href="index.html">
-            <img alt="Logo" src="{{ asset('images/logo.png') }}"
+            <img alt="Logo" src="{{ asset(getSetting()->logo) }}"
                 class="h-100px app-sidebar-logo-default theme-light-show" />
-            <img alt="Logo" src="{{ asset('images/logo.png') }}"
+            <img alt="Logo" src="{{ asset(getSetting()->logo) }}"
                 class="h-100px app-sidebar-logo-default theme-dark-show" />
-            <img alt="Logo" src="{{ asset('images/logo.png') }}" class="h-70px app-sidebar-logo-minimize" />
+            <img alt="Logo" src="{{ asset(getSetting()->logo) }}" class="h-70px app-sidebar-logo-minimize" />
         </a>
         <!--end::Logo image-->
         <!--begin::Sidebar toggle-->

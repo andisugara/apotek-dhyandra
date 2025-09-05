@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 
 if (!function_exists('getMenu')) {
@@ -111,5 +112,19 @@ if (!function_exists('getMenu')) {
         }
 
         return $menu;
+    }
+}
+
+if (!function_exists('getSetting')) {
+    /**
+     * Get application settings.
+     *
+     * @return array
+     */
+    function getSetting()
+    {
+        // Example: fetch settings from config or database
+        // Replace with actual logic as needed
+        return Setting::first();
     }
 }
