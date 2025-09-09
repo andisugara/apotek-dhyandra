@@ -182,6 +182,18 @@ class PembelianController extends Controller
                 $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
                 $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
 
+                // Tambahkan perhitungan untuk HPP setelah menambahkan PPN
+                $ppnPersen = floatval($request->ppn_total ?? 0);
+                $ppnNominalPerItem = ($ppnPersen / 100) * $totalItem;
+                $totalDenganPPN = $totalItem + $ppnNominalPerItem;
+
+                // Hitung ulang HPP dengan PPN
+                $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
+
+                // Hitung ulang harga jual berdasarkan HPP baru
+                $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+
                 // Create detail record
                 $pembelianDetail = PembelianDetail::create([
                     'pembelian_id' => $pembelian->id,
@@ -201,6 +213,19 @@ class PembelianController extends Controller
                     'total' => $totalItem
                 ]);
 
+                // Tambahkan perhitungan untuk HPP setelah menambahkan PPN
+                // Hitung PPN untuk item ini
+                $ppnPersen = floatval($request->ppn_total ?? 0);
+                $ppnNominalPerItem = ($ppnPersen / 100) * $totalItem;
+                $totalDenganPPN = $totalItem + $ppnNominalPerItem;
+
+                // Hitung ulang HPP dengan PPN
+                $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
+
+                // Hitung ulang harga jual berdasarkan HPP baru
+                $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+
                 // Create or update stock
                 Stok::create([
                     'obat_id' => $detail['obat_id'],
@@ -210,7 +235,9 @@ class PembelianController extends Controller
                     'tanggal_expired' => $detail['tanggal_expired'],
                     'qty' => $jumlah,
                     'qty_awal' => $jumlah,
-                    'pembelian_detail_id' => $pembelianDetail->id
+                    'pembelian_detail_id' => $pembelianDetail->id,
+                    'harga_beli' => $hppPerUnit, // Menggunakan HPP sebagai harga beli
+                    'harga_jual' => $hargaJualPerUnit
                 ]);
 
                 // Update obat satuan with new price if needed
@@ -220,7 +247,7 @@ class PembelianController extends Controller
 
                 if ($obatSatuan) {
                     $obatSatuan->update([
-                        'harga_beli' => $hargaBeli,
+                        'harga_beli' => $hppPerUnit,
                         'profit_persen' => $marginJualPersen,
                         'harga_jual' => $hargaJualPerUnit
                     ]);
@@ -228,7 +255,7 @@ class PembelianController extends Controller
                     ObatSatuan::create([
                         'obat_id' => $detail['obat_id'],
                         'satuan_id' => $detail['satuan_id'],
-                        'harga_beli' => $hargaBeli,
+                        'harga_beli' => $hppPerUnit,
                         'diskon_persen' => 0,
                         'profit_persen' => $marginJualPersen,
                         'harga_jual' => $hargaJualPerUnit
@@ -242,14 +269,15 @@ class PembelianController extends Controller
             }
 
             // Add PPN if applicable
-            $ppnTotal = floatval($request->ppn_total ?? 0);
-            $grandTotal += $ppnTotal;
+            $ppnPersen = floatval($request->ppn_total ?? 0);
+            $ppnNominal = ($ppnPersen / 100) * ($subtotal - $diskonTotal);
+            $grandTotal += $ppnNominal;
 
             // Update pembelian with calculated totals
             $pembelian->update([
                 'subtotal' => $subtotal,
                 'diskon_total' => $diskonTotal,
-                'ppn_total' => $ppnTotal,
+                'ppn_total' => $ppnNominal, // Simpan nilai PPN dalam Rupiah
                 'grand_total' => $grandTotal
             ]);
 
@@ -386,12 +414,24 @@ class PembelianController extends Controller
                 if (isset($detail['id']) && $detail['id']) {
                     $pembelianDetail = PembelianDetail::find($detail['id']);
                     if ($pembelianDetail && $pembelianDetail->pembelian_id == $pembelian->id) {
+                        // Tambahkan perhitungan untuk HPP setelah menambahkan PPN
+                        $ppnPersen = floatval($request->ppn_total ?? 0);
+                        $ppnNominalPerItem = ($ppnPersen / 100) * $totalItem;
+                        $totalDenganPPN = $totalItem + $ppnNominalPerItem;
+
+                        // Hitung ulang HPP dengan PPN
+                        $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
+
+                        // Hitung ulang harga jual berdasarkan HPP baru
+                        $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                        $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+
                         // Update existing detail
                         $pembelianDetail->update([
                             'obat_id' => $detail['obat_id'],
                             'satuan_id' => $detail['satuan_id'],
                             'jumlah' => $jumlah,
-                            'harga_beli' => $hargaBeli,
+                            'harga_beli' => $hppPerUnit,
                             'subtotal' => $subtotalItem,
                             'diskon_persen' => $diskonPersen,
                             'diskon_nominal' => $diskonNominal,
@@ -407,6 +447,18 @@ class PembelianController extends Controller
                         // Update associated stock
                         $stok = Stok::where('pembelian_detail_id', $pembelianDetail->id)->first();
                         if ($stok) {
+                            // Tambahkan perhitungan untuk HPP setelah menambahkan PPN
+                            $ppnPersen = floatval($request->ppn_total ?? 0);
+                            $ppnNominalPerItem = ($ppnPersen / 100) * $totalItem;
+                            $totalDenganPPN = $totalItem + $ppnNominalPerItem;
+
+                            // Hitung ulang HPP dengan PPN
+                            $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
+
+                            // Hitung ulang harga jual berdasarkan HPP baru
+                            $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                            $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+
                             $stok->update([
                                 'obat_id' => $detail['obat_id'],
                                 'satuan_id' => $detail['satuan_id'],
@@ -414,20 +466,34 @@ class PembelianController extends Controller
                                 'no_batch' => $detail['no_batch'],
                                 'tanggal_expired' => $detail['tanggal_expired'],
                                 'qty' => $jumlah,
-                                'qty_awal' => $jumlah
+                                'qty_awal' => $jumlah,
+                                'harga_beli' => $hppPerUnit, // Menggunakan HPP sebagai harga beli
+                                'harga_jual' => $hargaJualPerUnit
                             ]);
                         }
 
                         $updatedDetailIds[] = $pembelianDetail->id;
                     }
                 } else {
+                    // Tambahkan perhitungan untuk HPP setelah menambahkan PPN
+                    $ppnPersen = floatval($request->ppn_total ?? 0);
+                    $ppnNominalPerItem = ($ppnPersen / 100) * $totalItem;
+                    $totalDenganPPN = $totalItem + $ppnNominalPerItem;
+
+                    // Hitung ulang HPP dengan PPN
+                    $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
+
+                    // Hitung ulang harga jual berdasarkan HPP baru
+                    $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                    $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+
                     // Create new detail
                     $pembelianDetail = PembelianDetail::create([
                         'pembelian_id' => $pembelian->id,
                         'obat_id' => $detail['obat_id'],
                         'satuan_id' => $detail['satuan_id'],
                         'jumlah' => $jumlah,
-                        'harga_beli' => $hargaBeli,
+                        'harga_beli' => $hppPerUnit,
                         'subtotal' => $subtotalItem,
                         'diskon_persen' => $diskonPersen,
                         'diskon_nominal' => $diskonNominal,
@@ -440,6 +506,18 @@ class PembelianController extends Controller
                         'total' => $totalItem
                     ]);
 
+                    // Tambahkan perhitungan untuk HPP setelah menambahkan PPN
+                    $ppnPersen = floatval($request->ppn_total ?? 0);
+                    $ppnNominalPerItem = ($ppnPersen / 100) * $totalItem;
+                    $totalDenganPPN = $totalItem + $ppnNominalPerItem;
+
+                    // Hitung ulang HPP dengan PPN
+                    $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
+
+                    // Hitung ulang harga jual berdasarkan HPP baru
+                    $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                    $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+
                     // Create new stock
                     Stok::create([
                         'obat_id' => $detail['obat_id'],
@@ -449,7 +527,9 @@ class PembelianController extends Controller
                         'tanggal_expired' => $detail['tanggal_expired'],
                         'qty' => $jumlah,
                         'qty_awal' => $jumlah,
-                        'pembelian_detail_id' => $pembelianDetail->id
+                        'pembelian_detail_id' => $pembelianDetail->id,
+                        'harga_beli' => $hppPerUnit, // Menggunakan HPP sebagai harga beli
+                        'harga_jual' => $hargaJualPerUnit
                     ]);
 
                     $updatedDetailIds[] = $pembelianDetail->id;
@@ -462,7 +542,7 @@ class PembelianController extends Controller
 
                 if ($obatSatuan) {
                     $obatSatuan->update([
-                        'harga_beli' => $hargaBeli,
+                        'harga_beli' => $hppPerUnit,
                         'profit_persen' => $marginJualPersen,
                         'harga_jual' => $hargaJualPerUnit
                     ]);
@@ -470,7 +550,7 @@ class PembelianController extends Controller
                     ObatSatuan::create([
                         'obat_id' => $detail['obat_id'],
                         'satuan_id' => $detail['satuan_id'],
-                        'harga_beli' => $hargaBeli,
+                        'harga_beli' => $hppPerUnit,
                         'diskon_persen' => 0,
                         'profit_persen' => $marginJualPersen,
                         'harga_jual' => $hargaJualPerUnit
@@ -499,14 +579,15 @@ class PembelianController extends Controller
             }
 
             // Add PPN if applicable
-            $ppnTotal = floatval($request->ppn_total ?? 0);
-            $grandTotal += $ppnTotal;
+            $ppnPersen = floatval($request->ppn_total ?? 0);
+            $ppnNominal = ($ppnPersen / 100) * ($subtotal - $diskonTotal);
+            $grandTotal += $ppnNominal;
 
             // Update pembelian with calculated totals
             $pembelian->update([
                 'subtotal' => $subtotal,
                 'diskon_total' => $diskonTotal,
-                'ppn_total' => $ppnTotal,
+                'ppn_total' => $ppnNominal, // Simpan nilai PPN dalam Rupiah
                 'grand_total' => $grandTotal
             ]);
 

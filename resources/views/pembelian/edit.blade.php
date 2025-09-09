@@ -127,18 +127,19 @@
                         <thead>
                             <tr class="fw-bold fs-6 text-gray-800">
                                 <th style="min-width: 200px;">Obat</th>
-                                <th style="min-width: 120px;">Satuan</th>
-                                <th style="min-width: 80px;">Jumlah</th>
-                                <th style="min-width: 120px;">Harga Beli</th>
-                                <th style="min-width: 120px;">Subtotal</th>
+                                <th style="min-width: 140px;">Satuan</th>
+                                <th style="min-width: 120px;">Jumlah</th>
+                                <th style="min-width: 150px;">Harga Beli</th>
+                                <th style="min-width: 150px;">Subtotal</th>
                                 <th style="min-width: 100px;">Diskon %</th>
                                 <th style="min-width: 120px;">Diskon Rp</th>
+                                <th style="min-width: 150px;">HPP</th>
                                 <th style="min-width: 100px;">Margin %</th>
-                                <th style="min-width: 120px;">Harga Jual</th>
+                                <th style="min-width: 150px;">Harga Jual</th>
                                 <th style="min-width: 120px;">No Batch</th>
                                 <th style="min-width: 120px;">Expired</th>
                                 <th style="min-width: 150px;">Lokasi</th>
-                                <th style="min-width: 120px;">Total</th>
+                                <th style="min-width: 150px;">Total</th>
                                 <th style="min-width: 60px;"></th>
                             </tr>
                         </thead>
@@ -204,6 +205,12 @@
                                         <input type="hidden" class="diskon-nominal-input"
                                             name="detail[{{ $index }}][diskon_nominal]"
                                             value="{{ $detail->diskon_nominal }}">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm hpp-display text-end"
+                                            value="{{ number_format($detail->hpp_per_unit, 0, ',', '.') }}" disabled>
+                                        <input type="hidden" class="hpp-input" name="detail[{{ $index }}][hpp]"
+                                            value="{{ $detail->hpp_per_unit }}">
                                     </td>
                                     <td>
                                         <input type="number" class="form-control form-control-sm margin-jual-input"
@@ -304,7 +311,8 @@
                             <div class="col-sm-8">
                                 <div class="input-group input-group-sm">
                                     <input type="text" class="form-control form-control-sm text-end" name="ppn_total"
-                                        id="ppn-total" value="{{ $pembelian->ppn_total }}">
+                                        id="ppn-total"
+                                        value="{{ $pembelian->subtotal > 0 ? number_format(($pembelian->ppn_total / ($pembelian->subtotal - $pembelian->diskon_total)) * 100, 0) : 0 }}">
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
@@ -376,6 +384,10 @@
                 <input type="text" class="form-control form-control-sm diskon-nominal-display text-end" disabled>
                 <input type="hidden" class="diskon-nominal-input" name="detail[__index__][diskon_nominal]"
                     value="0">
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm hpp-display text-end" disabled>
+                <input type="hidden" class="hpp-input" name="detail[__index__][hpp]" value="0">
             </td>
             <td>
                 <input type="number" class="form-control form-control-sm margin-jual-input"
@@ -528,8 +540,14 @@
                 calculateRowValues(row);
             });
 
-            // Calculate PPN when value changes
+            // Calculate PPN when value changes and update HPP for all rows
             $('#ppn-total').on('input', function() {
+                // Update HPP dan harga jual for all rows
+                $('.detail-row').each(function() {
+                    calculateRowValues($(this));
+                });
+
+                // Then calculate overall totals
                 calculateTotals();
             });
 
@@ -597,12 +615,19 @@
                 const hargaBeli = parseInt(row.find('.harga-beli-input').val().replace(/[^\d]/g, '')) || 0;
                 const diskonPersen = parseFloat(row.find('.diskon-persen-input').val()) || 0;
                 const marginPersen = parseFloat(row.find('.margin-jual-input').val()) || 0;
+                const ppnPersen = parseFloat($('#ppn-total').val()) || 0;
 
                 // Calculate values
                 const subtotal = jumlah * hargaBeli;
                 const diskonNominal = (diskonPersen / 100) * subtotal;
-                const total = subtotal - diskonNominal;
-                const hppPerUnit = jumlah > 0 ? total / jumlah : 0;
+                const subtotalSetelahDiskon = subtotal - diskonNominal;
+                const ppnNominalPerItem = (ppnPersen / 100) * subtotalSetelahDiskon;
+
+                // HPP per unit (termasuk PPN)
+                const totalDenganPPN = subtotalSetelahDiskon + ppnNominalPerItem;
+                const hppPerUnit = jumlah > 0 ? (subtotalSetelahDiskon + ppnNominalPerItem) / jumlah : 0;
+
+                // Harga jual berdasarkan HPP + margin
                 const marginNominal = (marginPersen / 100) * hppPerUnit;
                 const hargaJual = hppPerUnit + marginNominal;
 
@@ -613,11 +638,15 @@
                 row.find('.diskon-nominal-display').val(formatRupiah(diskonNominal));
                 row.find('.diskon-nominal-input').val(diskonNominal);
 
+                // Display HPP per unit
+                row.find('.hpp-display').val(formatRupiah(hppPerUnit));
+                row.find('.hpp-input').val(hppPerUnit);
+
                 row.find('.harga-jual-display').val(formatRupiah(hargaJual));
                 row.find('.harga-jual-input').val(hargaJual);
 
-                row.find('.total-item-display').val(formatRupiah(total));
-                row.find('.total-item-input').val(total);
+                row.find('.total-item-display').val(formatRupiah(subtotalSetelahDiskon));
+                row.find('.total-item-input').val(subtotalSetelahDiskon);
 
                 // Calculate overall totals
                 calculateTotals();

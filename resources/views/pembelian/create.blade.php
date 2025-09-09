@@ -110,49 +110,6 @@
                     </div>
                 </div>
 
-                <div class="separator separator-dashed my-5"></div>
-
-                <!-- Detail Obat -->
-                <h4 class="mb-5">Detail Pembelian</h4>
-
-                <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
-                    <table class="table table-row-bordered" id="detail-table" style="min-width: 1500px;">
-                        <thead>
-                            <tr class="fw-bold fs-6 text-gray-800">
-                                <th style="min-width: 200px;">Obat</th>
-                                <th style="min-width: 120px;">Satuan</th>
-                                <th style="min-width: 100px;">Jumlah</th>
-                                <th style="min-width: 120px;">Harga Beli</th>
-                                <th style="min-width: 120px;">Subtotal</th>
-                                <th style="min-width: 100px;">Diskon %</th>
-                                <th style="min-width: 120px;">Diskon Rp</th>
-                                <th style="min-width: 100px;">Margin %</th>
-                                <th style="min-width: 120px;">Harga Jual</th>
-                                <th style="min-width: 120px;">No Batch</th>
-                                <th style="min-width: 120px;">Expired</th>
-                                <th style="min-width: 150px;">Lokasi</th>
-                                <th style="min-width: 120px;">Total</th>
-                                <th style="min-width: 60px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="detail-tbody">
-                            <tr id="empty-row">
-                                <td colspan="14" class="text-center text-muted">Belum ada detail pembelian</td>
-                            </tr>
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="14">
-                                    <button type="button" class="btn btn-sm btn-light-primary" id="add-detail-btn">
-                                        <i class="ki-duotone ki-plus fs-5"></i>Tambah Item
-                                    </button>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-
-                <div class="separator separator-dashed my-5"></div>
 
                 <!-- Summary -->
                 <div class="row mb-6 justify-content-end">
@@ -193,6 +150,51 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="separator separator-dashed my-5"></div>
+
+                <!-- Detail Obat -->
+                <h4 class="mb-5">Detail Pembelian</h4>
+
+                <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
+                    <table class="table table-row-bordered" id="detail-table" style="min-width: 1800px;">
+                        <thead>
+                            <tr class="fw-bold fs-6 text-gray-800">
+                                <th style="min-width: 200px;">Obat</th>
+                                <th style="min-width: 140px;">Satuan</th>
+                                <th style="min-width: 120px;">Jumlah</th>
+                                <th style="min-width: 150px;">Harga Beli</th>
+                                <th style="min-width: 150px;">Subtotal</th>
+                                <th style="min-width: 100px;">Diskon %</th>
+                                <th style="min-width: 120px;">Diskon Rp</th>
+                                <th style="min-width: 150px;">HPP</th>
+                                <th style="min-width: 100px;">Margin %</th>
+                                <th style="min-width: 150px;">Harga Jual</th>
+                                <th style="min-width: 120px;">No Batch</th>
+                                <th style="min-width: 120px;">Expired</th>
+                                <th style="min-width: 150px;">Lokasi</th>
+                                <th style="min-width: 150px;">Total</th>
+                                <th style="min-width: 60px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-tbody">
+                            <tr id="empty-row">
+                                <td colspan="15" class="text-center text-muted">Belum ada detail pembelian</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="15">
+                                    <button type="button" class="btn btn-sm btn-light-primary" id="add-detail-btn">
+                                        <i class="ki-duotone ki-plus fs-5"></i>Tambah Item
+                                    </button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+
 
                 <div class="separator separator-dashed my-5"></div>
 
@@ -248,6 +250,10 @@
                 <input type="text" class="form-control form-control-sm diskon-nominal-display text-end" disabled>
                 <input type="hidden" class="diskon-nominal-input" name="detail[__index__][diskon_nominal]"
                     value="0">
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm hpp-display text-end" disabled>
+                <input type="hidden" class="hpp-input" name="detail[__index__][hpp]" value="0">
             </td>
             <td>
                 <input type="number" class="form-control form-control-sm margin-jual-input"
@@ -402,8 +408,14 @@
                 calculateRowValues(row);
             });
 
-            // Calculate PPN when value changes
+            // Calculate PPN when value changes and update HPP for all rows
             $('#ppn-total').on('input', function() {
+                // Update HPP dan harga jual for all rows
+                $('.detail-row').each(function() {
+                    calculateRowValues($(this));
+                });
+
+                // Then calculate overall totals
                 calculateTotals();
             });
 
@@ -474,12 +486,19 @@
                 const hargaBeli = parseInt(row.find('.harga-beli-input').val().replace(/[^\d]/g, '')) || 0;
                 const diskonPersen = parseFloat(row.find('.diskon-persen-input').val()) || 0;
                 const marginPersen = parseFloat(row.find('.margin-jual-input').val()) || 0;
+                const ppnPersen = parseFloat($('#ppn-total').val()) || 0;
 
                 // Calculate values
                 const subtotal = jumlah * hargaBeli;
                 const diskonNominal = (diskonPersen / 100) * subtotal;
-                const total = subtotal - diskonNominal;
-                const hppPerUnit = jumlah > 0 ? total / jumlah : 0;
+                const subtotalSetelahDiskon = subtotal - diskonNominal;
+                const ppnNominalPerItem = (ppnPersen / 100) * subtotalSetelahDiskon;
+
+                // HPP per unit (termasuk PPN)
+                const totalDenganPPN = subtotalSetelahDiskon + ppnNominalPerItem;
+                const hppPerUnit = jumlah > 0 ? (subtotalSetelahDiskon + ppnNominalPerItem) / jumlah : 0;
+
+                // Harga jual berdasarkan HPP + margin
                 const marginNominal = (marginPersen / 100) * hppPerUnit;
                 const hargaJual = hppPerUnit + marginNominal;
 
@@ -490,11 +509,17 @@
                 row.find('.diskon-nominal-display').val(formatRupiah(diskonNominal));
                 row.find('.diskon-nominal-input').val(diskonNominal);
 
+                // Display HPP per unit
+                row.find('.hpp-display').val(formatRupiah(hppPerUnit));
+                row.find('.hpp-input').val(hppPerUnit);
+
+                // Display harga jual
                 row.find('.harga-jual-display').val(formatRupiah(hargaJual));
                 row.find('.harga-jual-input').val(hargaJual);
 
-                row.find('.total-item-display').val(formatRupiah(total));
-                row.find('.total-item-input').val(total);
+                // Display total (subtotal - diskon)
+                row.find('.total-item-display').val(formatRupiah(subtotalSetelahDiskon));
+                row.find('.total-item-input').val(subtotalSetelahDiskon);
 
                 // Calculate overall totals
                 calculateTotals();
@@ -503,7 +528,7 @@
             function calculateTotals() {
                 let subtotal = 0;
                 let diskonTotal = 0;
-                let grandTotal = 0;
+                let subtotalSetelahDiskon = 0;
 
                 // Sum up all rows
                 $('.detail-row').each(function() {
@@ -513,13 +538,13 @@
 
                     subtotal += rowSubtotal;
                     diskonTotal += rowDiskon;
-                    grandTotal += rowTotal;
+                    subtotalSetelahDiskon += rowTotal;
                 });
 
                 // Calculate PPN
                 const ppnPersen = parseFloat($('#ppn-total').val()) || 0;
-                const ppnNominal = (ppnPersen / 100) * (subtotal - diskonTotal);
-                grandTotal += ppnNominal;
+                const ppnNominal = (ppnPersen / 100) * subtotalSetelahDiskon;
+                const grandTotal = subtotalSetelahDiskon + ppnNominal;
 
                 // Update displays
                 $('#subtotal-display').val(formatRupiah(subtotal));

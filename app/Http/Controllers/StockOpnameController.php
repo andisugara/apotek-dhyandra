@@ -14,19 +14,79 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Yajra\DataTables\Facades\DataTables;
 
 class StockOpnameController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $stockOpnames = StockOpname::with('user')
-            ->orderBy('tanggal', 'desc')
-            ->get();
+        if ($request->ajax()) {
+            $data = StockOpname::with('user')
+                ->orderBy('tanggal', 'desc');
 
-        return view('stock_opname.index', compact('stockOpnames'));
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->addColumn('tanggal_formatted', function ($row) {
+                    return $row->tanggal->format('d/m/Y');
+                })
+                ->addColumn('petugas', function ($row) {
+                    return $row->user->name;
+                })
+                ->addColumn('status_badge', function ($row) {
+                    if ($row->status == 'draft') {
+                        return '<span class="badge badge-light-warning">Draft</span>';
+                    } else {
+                        return '<span class="badge badge-light-success">Selesai</span>';
+                    }
+                })
+                ->addColumn('action', function ($row) {
+                    $actionBtn = '<a href="' . route('stock_opname.show', $row) . '" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Lihat Detail">
+                                    <i class="ki-duotone ki-eye fs-2">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                        <span class="path3"></span>
+                                    </i>
+                                </a>';
+
+                    if ($row->status == 'draft') {
+                        $actionBtn .= '<a href="' . route('stock_opname.edit', $row) . '" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Edit">
+                                        <i class="ki-duotone ki-pencil fs-2">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                    </a>';
+
+                        $actionBtn .= '<button type="button" class="btn btn-icon btn-bg-light btn-active-color-danger btn-sm btn-delete" data-id="' . $row->id . '" title="Hapus">
+                                        <i class="ki-duotone ki-trash fs-2">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                            <span class="path3"></span>
+                                            <span class="path4"></span>
+                                            <span class="path5"></span>
+                                        </i>
+                                    </button>';
+                    }
+
+                    $actionBtn .= '<a href="' . route('stock_opname.print', $row) . '" class="btn btn-icon btn-bg-light btn-active-color-success btn-sm" title="Print" target="_blank">
+                                    <i class="ki-duotone ki-printer fs-2">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                        <span class="path3"></span>
+                                        <span class="path4"></span>
+                                        <span class="path5"></span>
+                                    </i>
+                                </a>';
+
+                    return $actionBtn;
+                })
+                ->rawColumns(['status_badge', 'action'])
+                ->make(true);
+        }
+
+        return view('stock_opname.index');
     }
 
     /**
@@ -187,16 +247,35 @@ class StockOpnameController extends Controller
         $lokasi_id = $request->lokasi_id;
         $keyword = $request->q;
 
-        $obats = Obat::with(['stok' => function ($query) use ($lokasi_id) {
-            $query->where('lokasi_id', $lokasi_id);
-        }])
-            ->where(function ($query) use ($keyword) {
-                $query->where('nama_obat', 'like', "%{$keyword}%")
-                    ->orWhere('kode_obat', 'like', "%{$keyword}%");
-            })
-            ->get();
+        try {
+            $obats = Obat::with(['stok' => function ($query) use ($lokasi_id) {
+                $query->where('lokasi_id', $lokasi_id);
+            }])
+                ->where(function ($query) use ($keyword) {
+                    $query->where('nama_obat', 'like', "%{$keyword}%")
+                        ->orWhere('kode_obat', 'like', "%{$keyword}%");
+                })
+                ->limit(10)
+                ->get();
 
-        return response()->json($obats);
+            // Log successful search
+            Log::info('Search obat success', [
+                'lokasi_id' => $lokasi_id,
+                'keyword' => $keyword,
+                'results_count' => $obats->count()
+            ]);
+
+            return response()->json($obats);
+        } catch (\Exception $e) {
+            // Log error
+            Log::error('Search obat error', [
+                'lokasi_id' => $lokasi_id,
+                'keyword' => $keyword,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -207,20 +286,45 @@ class StockOpnameController extends Controller
         $obat_id = $request->obat_id;
         $lokasi_id = $request->lokasi_id;
 
-        $stoks = Stok::with(['satuan', 'lokasi'])
-            ->where('obat_id', $obat_id)
-            ->where('lokasi_id', $lokasi_id)
-            ->where('jumlah', '>', 0)
-            ->get();
-
-        // Format dates to be Y-m-d for JavaScript date inputs
-        $stoks->each(function ($stok) {
-            if ($stok->tanggal_expired) {
-                $stok->tanggal_expired = $stok->tanggal_expired->format('Y-m-d');
+        try {
+            // Validate input
+            if (!$obat_id || !$lokasi_id) {
+                Log::warning('Invalid parameters for getStokDetail', [
+                    'obat_id' => $obat_id,
+                    'lokasi_id' => $lokasi_id
+                ]);
+                return response()->json(['error' => 'Obat ID dan Lokasi ID diperlukan'], 400);
             }
-        });
 
-        return response()->json($stoks);
+            $stoks = Stok::with(['satuan', 'lokasi'])
+                ->where('obat_id', $obat_id)
+                ->where('lokasi_id', $lokasi_id)
+                ->where('jumlah', '>', 0)
+                ->get();
+
+            // Format dates to be Y-m-d for JavaScript date inputs
+            $stoks->each(function ($stok) {
+                if ($stok->tanggal_expired) {
+                    $stok->tanggal_expired = Carbon::parse($stok->tanggal_expired)->format('Y-m-d');
+                }
+            });
+
+            Log::info('Get stok detail success', [
+                'obat_id' => $obat_id,
+                'lokasi_id' => $lokasi_id,
+                'results_count' => $stoks->count()
+            ]);
+
+            return response()->json($stoks);
+        } catch (\Exception $e) {
+            Log::error('Get stok detail error', [
+                'obat_id' => $obat_id,
+                'lokasi_id' => $lokasi_id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -233,75 +337,97 @@ class StockOpnameController extends Controller
             'stockOpname' => $stockOpname->id
         ]);
 
-        $request->validate([
-            'obat_id' => 'required|exists:obats,id',
-            'satuan_id' => 'required|exists:satuan_obats,id',
-            'lokasi_id' => 'required|exists:lokasi_obats,id',
-            'no_batch' => 'required|string',
-            'tanggal_expired' => 'required|date',
-            'stok_sistem' => 'required|integer|min:0',
-            'stok_fisik' => 'required|integer|min:0',
-            'tindakan' => 'nullable|string',
-            'catatan' => 'nullable|string',
-        ]);
-
-        if ($stockOpname->status === 'selesai') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Stock opname yang sudah selesai tidak dapat diubah.'
-            ], 422);
-        }
-
-        // Check if this item already exists in the stock opname
-        $existing = StockOpnameDetail::where('stock_opname_id', $stockOpname->id)
-            ->where('obat_id', $request->obat_id)
-            ->where('satuan_id', $request->satuan_id)
-            ->where('lokasi_id', $request->lokasi_id)
-            ->where('no_batch', $request->no_batch)
-            ->first();
-
-        if ($existing) {
-            Log::warning('Item already exists in stock opname', ['detail' => $existing]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Obat dengan batch yang sama sudah ada di stock opname ini.'
-            ], 422);
-        }
-
-        DB::beginTransaction();
-
         try {
-            $selisih = (int)$request->stok_fisik - (int)$request->stok_sistem;
-
-            // Make sure tanggal_expired is in the proper date format
-            $tanggalExpired = $request->tanggal_expired;
-
-            $detail = StockOpnameDetail::create([
-                'stock_opname_id' => $stockOpname->id,
-                'obat_id' => $request->obat_id,
-                'satuan_id' => $request->satuan_id,
-                'lokasi_id' => $request->lokasi_id,
-                'no_batch' => $request->no_batch,
-                'tanggal_expired' => $tanggalExpired,
-                'stok_sistem' => (int)$request->stok_sistem,
-                'stok_fisik' => (int)$request->stok_fisik,
-                'selisih' => $selisih,
-                'tindakan' => $request->tindakan,
-                'catatan' => $request->catatan,
+            $request->validate([
+                'obat_id' => 'required|exists:obats,id',
+                'satuan_id' => 'required|exists:satuan_obats,id',
+                'lokasi_id' => 'required|exists:lokasi_obats,id',
+                'no_batch' => 'required|string',
+                'tanggal_expired' => 'required|date',
+                'stok_sistem' => 'required|integer|min:0',
+                'stok_fisik' => 'required|integer|min:0',
+                'tindakan' => 'nullable|string',
+                'catatan' => 'nullable|string',
             ]);
 
-            Log::info('Successfully added obat to stock opname', ['detail' => $detail]);
+            if ($stockOpname->status === 'selesai') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stock opname yang sudah selesai tidak dapat diubah.'
+                ], 422);
+            }
 
-            DB::commit();
+            // Check if this item already exists in the stock opname
+            $existing = StockOpnameDetail::where('stock_opname_id', $stockOpname->id)
+                ->where('obat_id', $request->obat_id)
+                ->where('satuan_id', $request->satuan_id)
+                ->where('lokasi_id', $request->lokasi_id)
+                ->where('no_batch', $request->no_batch)
+                ->first();
+
+            if ($existing) {
+                Log::warning('Item already exists in stock opname', ['detail' => $existing]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Obat dengan batch yang sama sudah ada di stock opname ini.'
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            try {
+                $selisih = (int)$request->stok_fisik - (int)$request->stok_sistem;
+
+                // Parse and format tanggal_expired to ensure consistent format
+                $tanggalExpired = Carbon::parse($request->tanggal_expired)->format('Y-m-d');
+
+                $detail = StockOpnameDetail::create([
+                    'stock_opname_id' => $stockOpname->id,
+                    'obat_id' => $request->obat_id,
+                    'satuan_id' => $request->satuan_id,
+                    'lokasi_id' => $request->lokasi_id,
+                    'no_batch' => $request->no_batch,
+                    'tanggal_expired' => $tanggalExpired,
+                    'stok_sistem' => (int)$request->stok_sistem,
+                    'stok_fisik' => (int)$request->stok_fisik,
+                    'selisih' => $selisih,
+                    'tindakan' => $request->tindakan,
+                    'catatan' => $request->catatan,
+                ]);
+
+                Log::info('Successfully added obat to stock opname', ['detail' => $detail->id]);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Obat berhasil ditambahkan ke stock opname.'
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                Log::error('Error in DB transaction when adding obat to stock opname', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan database: ' . $e->getMessage()
+                ], 500);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error when adding obat to stock opname', [
+                'errors' => $e->errors()
+            ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Obat berhasil ditambahkan ke stock opname.'
-            ]);
+                'success' => false,
+                'message' => 'Data tidak valid',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            DB::rollBack();
-
-            Log::error('Error adding obat to stock opname', [
+            Log::error('Unexpected error adding obat to stock opname', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

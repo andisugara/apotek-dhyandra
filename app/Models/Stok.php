@@ -19,7 +19,9 @@ class Stok extends Model
         'tanggal_expired',
         'qty',
         'qty_awal',
-        'pembelian_detail_id'
+        'pembelian_detail_id',
+        'harga_beli',
+        'harga_jual'
     ];
 
     // Cast attributes

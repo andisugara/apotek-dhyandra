@@ -116,7 +116,8 @@ Route::middleware(['auth'])->group(function () {
     // Stock Opname
     Route::resource('stock_opname', StockOpnameController::class);
     Route::post('stock_opname/search-obat', [StockOpnameController::class, 'searchObat'])->name('stock_opname.search_obat');
-    Route::post('stock_opname/get-stok-detail', [StockOpnameController::class, 'getStokDetail'])->name('stock_opname.get_stok_detail');
+    Route::get('stock_opname/search-obat', [StockOpnameController::class, 'searchObat']); // Untuk mendukung GET request
+    Route::match(['get', 'post'], 'stock_opname/get-stok-detail', [StockOpnameController::class, 'getStokDetail'])->name('stock_opname.get_stok_detail');
     Route::post('stock_opname/{stockOpname}/add-obat', [StockOpnameController::class, 'addObat'])->name('stock_opname.add_obat');
     Route::delete('stock_opname/{stockOpname}/remove-obat/{detail}', [StockOpnameController::class, 'removeObat'])->name('stock_opname.remove_obat');
     Route::put('stock_opname/{stockOpname}/complete', [StockOpnameController::class, 'complete'])->name('stock_opname.complete');

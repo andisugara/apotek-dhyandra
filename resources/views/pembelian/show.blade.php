@@ -117,6 +117,7 @@
                             <th class="min-w-100px text-end">Subtotal</th>
                             <th class="min-w-50px text-end">Diskon %</th>
                             <th class="min-w-100px text-end">Diskon Rp</th>
+                            <th class="min-w-100px text-end">HPP</th>
                             <th class="min-w-50px text-end">Margin %</th>
                             <th class="min-w-100px text-end">Harga Jual</th>
                             <th class="min-w-80px">No Batch</th>
@@ -134,6 +135,7 @@
                                 <td class="text-end">Rp {{ $detail->formatted_subtotal }}</td>
                                 <td class="text-end">{{ $detail->diskon_persen }}%</td>
                                 <td class="text-end">Rp {{ $detail->formatted_diskon_nominal }}</td>
+                                <td class="text-end">Rp {{ $detail->formatted_hpp_per_unit }}</td>
                                 <td class="text-end">{{ $detail->margin_jual_persen }}%</td>
                                 <td class="text-end">Rp {{ $detail->formatted_harga_jual_per_unit }}</td>
                                 <td>{{ $detail->no_batch }}</td>
@@ -144,19 +146,19 @@
                     </tbody>
                     <tfoot>
                         <tr class="fw-bold">
-                            <td colspan="11" class="text-end">Subtotal</td>
+                            <td colspan="12" class="text-end">Subtotal</td>
                             <td class="text-end">Rp {{ $pembelian->formatted_subtotal }}</td>
                         </tr>
                         <tr>
-                            <td colspan="11" class="text-end">Diskon Total</td>
+                            <td colspan="12" class="text-end">Diskon Total</td>
                             <td class="text-end">Rp {{ $pembelian->formatted_diskon_total }}</td>
                         </tr>
                         <tr>
-                            <td colspan="11" class="text-end">PPN</td>
+                            <td colspan="12" class="text-end">PPN</td>
                             <td class="text-end">Rp {{ $pembelian->formatted_ppn_total }}</td>
                         </tr>
                         <tr class="fw-bolder fs-6">
-                            <td colspan="11" class="text-end">Grand Total</td>
+                            <td colspan="12" class="text-end">Grand Total</td>
                             <td class="text-end">Rp {{ $pembelian->formatted_grand_total }}</td>
                         </tr>
                     </tfoot>
