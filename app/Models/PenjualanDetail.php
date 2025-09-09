@@ -14,6 +14,7 @@ class PenjualanDetail extends Model
         'obat_id',
         'satuan_id',
         'jumlah',
+        'harga_beli',
         'harga',
         'subtotal',
         'diskon',
@@ -26,6 +27,7 @@ class PenjualanDetail extends Model
 
     protected $casts = [
         'jumlah' => 'integer',
+        'harga_beli' => 'decimal:2',
         'harga' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'diskon' => 'decimal:2',
@@ -61,6 +63,11 @@ class PenjualanDetail extends Model
     }
 
     // Accessor for formatted values
+    public function getFormattedHargaBeliAttribute()
+    {
+        return number_format($this->harga_beli, 0, ',', '.');
+    }
+
     public function getFormattedHargaAttribute()
     {
         return number_format($this->harga, 0, ',', '.');

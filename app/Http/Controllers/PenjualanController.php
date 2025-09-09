@@ -111,6 +111,7 @@ class PenjualanController extends Controller
                     'obat_id' => $detail['obat_id'],
                     'satuan_id' => $detail['satuan_id'],
                     'jumlah' => $detail['jumlah'],
+                    'harga_beli' => 0, // Default value, will be updated below from stock
                     'harga' => $detail['harga'],
                     'subtotal' => $detail['subtotal'],
                     'diskon' => $detail['diskon'],
@@ -121,15 +122,17 @@ class PenjualanController extends Controller
                     'lokasi_id' => $detail['lokasi_id']
                 ]);
 
-                // Update stock
+                // Update stock - mencari berdasarkan no_batch, obat_id, DAN satuan_id
                 $stok = Stok::where('no_batch', $detail['no_batch'])
                     ->where('obat_id', $detail['obat_id'])
+                    ->where('satuan_id', $detail['satuan_id'])
                     ->first();
 
                 if ($stok) {
-                    // Update expiry date in detail
+                    // Update expiry date and harga_beli in detail
                     $penjualanDetail->update([
-                        'tanggal_expired' => $stok->tanggal_expired
+                        'tanggal_expired' => $stok->tanggal_expired,
+                        'harga_beli' => $stok->harga_beli
                     ]);
 
                     // Update stock quantity
@@ -178,10 +181,13 @@ class PenjualanController extends Controller
 
             DB::commit();
 
-            // Cek apakah perlu cetak struk
-            if ($request->has('cetak_struk')) {
-                // Redirect ke halaman print struk
-                return redirect()->route('penjualan.print', $penjualan->id);
+            // Cek apakah perlu cetak struk atau faktur
+            if ($request->has('cetak_format') && $request->cetak_format !== 'none') {
+                // Redirect ke halaman print dengan format yang dipilih
+                return redirect()->route('penjualan.print', [
+                    'id' => $penjualan->id,
+                    'format' => $request->cetak_format
+                ]);
             } else {
                 return redirect()->route('penjualan.index')->with('success', 'Transaksi penjualan berhasil ditambahkan');
             }
@@ -214,7 +220,7 @@ class PenjualanController extends Controller
     /**
      * Generate PDF receipt for printing
      */
-    public function printPdf(string $id)
+    public function printPdf(string $id, Request $request)
     {
         $penjualan = Penjualan::with([
             'pasien',
@@ -224,27 +230,46 @@ class PenjualanController extends Controller
         ])->findOrFail($id);
 
         $setting = getSetting();
+        $format = $request->format ?? '58mm'; // Default to 58mm if not specified
 
-        // Set custom paper size for thermal printer (58mm width)
-        // 58mm = ~210 points (72 points per inch), width for standard 58mm thermal paper
-        // The height is set large enough to accommodate the entire content
-        $customPaper = array(0, 0, 210, 800);
+        if ($format === 'a4') {
+            // Use A4 paper format
+            $pdf = Pdf::setPaper('a4', 'portrait');
 
-        // Generate PDF with the custom paper size using the Pdf facade
-        $pdf = Pdf::setPaper($customPaper, 'portrait');
+            // Configure DomPDF options for better quality
+            $pdf->setOption('defaultFont', 'sans-serif');
+            $pdf->setOption('isRemoteEnabled', true);
+            $pdf->setOption('isHtml5ParserEnabled', true);
+            $pdf->setOption('isFontSubsettingEnabled', true);
 
-        // Configure DomPDF options for better thermal printing results
-        $pdf->setOption('defaultFont', 'sans-serif');
-        $pdf->setOption('isRemoteEnabled', true);
-        $pdf->setOption('isHtml5ParserEnabled', true);
-        $pdf->setOption('isFontSubsettingEnabled', true);
+            $pdf->loadView('penjualan.print_a4', compact('penjualan', 'setting'));
 
-        $pdf->loadView('penjualan.print', compact('penjualan', 'setting'));
+            // Return the PDF as a download with a filename based on invoice number
+            return $pdf->stream("faktur-{$penjualan->no_faktur}.pdf", [
+                'Attachment' => false // Set to false to open in browser
+            ]);
+        } else {
+            // Set custom paper size for thermal printer (58mm width)
+            // 58mm = ~210 points (72 points per inch), width for standard 58mm thermal paper
+            // The height is set large enough to accommodate the entire content
+            $customPaper = array(0, 0, 210, 800);
 
-        // Return the PDF as a download with a filename based on invoice number
-        return $pdf->stream("struk-{$penjualan->no_faktur}.pdf", [
-            'Attachment' => false // Set to true to force download, false to open in browser
-        ]);
+            // Generate PDF with the custom paper size using the Pdf facade
+            $pdf = Pdf::setPaper($customPaper, 'portrait');
+
+            // Configure DomPDF options for better thermal printing results
+            $pdf->setOption('defaultFont', 'sans-serif');
+            $pdf->setOption('isRemoteEnabled', true);
+            $pdf->setOption('isHtml5ParserEnabled', true);
+            $pdf->setOption('isFontSubsettingEnabled', true);
+
+            $pdf->loadView('penjualan.print', compact('penjualan', 'setting'));
+
+            // Return the PDF as a download with a filename based on invoice number
+            return $pdf->stream("struk-{$penjualan->no_faktur}.pdf", [
+                'Attachment' => false // Set to false to open in browser
+            ]);
+        }
     }
 
     /**
@@ -330,7 +355,7 @@ class PenjualanController extends Controller
                             'satuan' => [
                                 'id' => $satuanId,
                                 'nama_satuan' => $satuanName,
-                                'harga_jual' => $obatSatuan->harga_jual
+                                'harga_jual' => $firstStock->harga_jual ?? $obatSatuan->harga_jual
                             ],
                             // Include only the first stock item (FIFO)
                             'first_stock' => [
@@ -341,6 +366,9 @@ class PenjualanController extends Controller
                                 'no_batch' => $firstStock->no_batch,
                                 'tanggal_expired' => $firstStock->tanggal_expired,
                                 'qty' => $firstStock->qty,
+                                'harga_jual' => $firstStock->harga_jual,
+                                'harga_beli' => $firstStock->harga_beli,
+                                'harga' => $firstStock->harga_jual, // Legacy compatibility
                                 'lokasi' => $firstStock->lokasi ? [
                                     'id' => $firstStock->lokasi->id,
                                     'nama_lokasi' => $firstStock->lokasi->nama_lokasi
@@ -395,9 +423,7 @@ class PenjualanController extends Controller
 
         // Get the first stock item (FIFO) for this obat and satuan
         $firstStock = Stok::where('obat_id', $obatId)
-            ->when($satuanId, function ($q) use ($satuanId) {
-                return $q->where('satuan_id', $satuanId);
-            })
+            ->where('satuan_id', $satuanId) // Selalu filter berdasarkan satuan_id
             ->where('qty', '>', 0)
             ->with([
                 'obat',
@@ -413,9 +439,11 @@ class PenjualanController extends Controller
             return response()->json([]);
         }
 
-        // Get price from obatSatuan
+        // Get price from stock's harga_jual, fallback to obatSatuan if needed
         $harga = 0;
-        if ($firstStock->obatSatuan) {
+        if ($firstStock->harga_jual) {
+            $harga = $firstStock->harga_jual;
+        } elseif ($firstStock->obatSatuan) {
             $harga = $firstStock->obatSatuan->harga_jual;
         }
 

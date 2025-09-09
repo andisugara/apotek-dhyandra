@@ -10,9 +10,20 @@
                 <a href="{{ route('penjualan.index') }}" class="btn btn-sm btn-light-primary me-2">
                     <i class="ki-outline ki-arrow-left fs-2"></i>Kembali
                 </a>
-                <a href="{{ route('penjualan.print', $penjualan->id) }}" class="btn btn-sm btn-primary" target="_blank">
-                    <i class="ki-outline ki-printer fs-2"></i>Cetak Struk
-                </a>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="printDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="ki-outline ki-printer fs-2"></i>Cetak
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="printDropdown">
+                        <li><a class="dropdown-item"
+                                href="{{ route('penjualan.print', ['id' => $penjualan->id, 'format' => '58mm']) }}"
+                                target="_blank">Struk 58mm</a></li>
+                        <li><a class="dropdown-item"
+                                href="{{ route('penjualan.print', ['id' => $penjualan->id, 'format' => 'a4']) }}"
+                                target="_blank">Faktur A4</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
         <div class="card-body">
@@ -83,7 +94,8 @@
                                     <th>Batch</th>
                                     <th>Expired</th>
                                     <th>Satuan</th>
-                                    <th>Harga</th>
+                                    <th>Harga Beli</th>
+                                    <th>Harga Jual</th>
                                     <th>Jumlah</th>
                                     <th>Diskon</th>
                                     <th>PPN</th>
@@ -104,6 +116,7 @@
                                         <td>{{ $detail->tanggal_expired ? $detail->tanggal_expired->format('d/m/Y') : '-' }}
                                         </td>
                                         <td>{{ $detail->satuan->nama }}</td>
+                                        <td>Rp {{ $detail->formatted_harga_beli ?? '0' }}</td>
                                         <td>Rp {{ $detail->formatted_harga }}</td>
                                         <td>{{ $detail->jumlah }}</td>
                                         <td>Rp {{ $detail->formatted_diskon }}</td>

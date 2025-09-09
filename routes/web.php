@@ -92,7 +92,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('retur_pembelian', ReturPembelianController::class)->except(['edit', 'update']);
 
     // Penjualan management
-    Route::get('penjualan/{penjualan}/print', [PenjualanController::class, 'printPdf'])->name('penjualan.print');
+    Route::get('penjualan/{id}/print', [PenjualanController::class, 'printPdf'])->name('penjualan.print');
     Route::post('penjualan/search-obat', [PenjualanController::class, 'searchObat'])->name('penjualan.search_obat');
     Route::post('penjualan/get-stok-detail', [PenjualanController::class, 'getStokDetail'])->name('penjualan.get_stok_detail');
     Route::resource('penjualan', PenjualanController::class)->except(['edit', 'update', 'destroy']);

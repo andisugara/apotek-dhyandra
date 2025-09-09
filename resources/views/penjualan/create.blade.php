@@ -208,12 +208,31 @@
                                     </div>
                                 </div>
 
-                                <div class="form-check form-check-custom form-check-solid mb-5">
-                                    <input class="form-check-input" type="checkbox" value="1" id="cetakStruk"
-                                        name="cetak_struk" checked />
-                                    <label class="form-check-label" for="cetakStruk">
-                                        Cetak struk setelah transaksi (default)
-                                    </label>
+                                <div class="mb-5">
+                                    <label class="form-label">Format Cetak</label>
+                                    <div class="d-flex">
+                                        <div class="form-check form-check-custom form-check-solid me-5">
+                                            <input class="form-check-input" type="radio" value="58mm" id="cetak58mm"
+                                                name="cetak_format" checked />
+                                            <label class="form-check-label" for="cetak58mm">
+                                                Struk 58mm (default)
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-custom form-check-solid me-5">
+                                            <input class="form-check-input" type="radio" value="a4" id="cetakA4"
+                                                name="cetak_format" />
+                                            <label class="form-check-label" for="cetakA4">
+                                                Faktur A4
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-custom form-check-solid">
+                                            <input class="form-check-input" type="radio" value="none"
+                                                id="tidakCetak" name="cetak_format" />
+                                            <label class="form-check-label" for="tidakCetak">
+                                                Tidak cetak
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="d-flex justify-content-center">
@@ -248,6 +267,7 @@
                 <span class="batch-display"></span>
             </td>
             <td>
+                <input type="hidden" name="detail[__index__][harga_beli]" class="harga-beli" value="0">
                 <input type="hidden" name="detail[__index__][harga]" class="harga">
                 <span class="harga-display"></span>
             </td>
@@ -464,9 +484,11 @@
                     const kategori = obat.kategori || 'N/A';
                     const golongan = obat.golongan || 'N/A';
 
-                    // Get price from satuan
+                    // Get price from stock (first_stock)
                     let harga = 0;
-                    if (obat.satuan) {
+                    if (obat.first_stock && obat.first_stock.harga_jual) {
+                        harga = obat.first_stock.harga_jual;
+                    } else if (obat.satuan) {
                         harga = obat.satuan.harga_jual || 0;
                     }
 
@@ -717,9 +739,15 @@
                 harga = parseFloat(obat.satuan.harga_jual || 0);
             }
 
-            // Update price display
+            // Get harga_beli from stock
+            let hargaBeli = parseFloat(stock.harga_beli || 0);
+
+            // Update price displays
             newRow.find('.harga').val(harga);
             newRow.find('.harga-display').text('Rp ' + formatNumber(harga));
+
+            // Update harga_beli field (hidden, just for data)
+            newRow.find('.harga-beli').val(hargaBeli);
 
             // Add to cart
             $('#emptyCart').hide();
