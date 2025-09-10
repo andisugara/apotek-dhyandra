@@ -50,6 +50,18 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="mb-5">
+                            <div class="form-check form-check-custom form-check-solid mt-10">
+                                <input class="form-check-input" type="checkbox" id="is_default" name="is_default"
+                                    {{ old('is_default', $akun->is_default) ? 'checked' : '' }} />
+                                <label class="form-check-label" for="is_default">
+                                    Jadikan Akun Default
+                                </label>
+                            </div>
+                            <span class="form-text text-muted">Hanya satu akun yang dapat menjadi default</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="d-flex justify-content-end">
                     <button type="button" class="btn btn-light me-3" onclick="window.history.back();">Batal</button>

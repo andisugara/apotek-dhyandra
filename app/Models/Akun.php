@@ -20,6 +20,7 @@ class Akun extends Model
         'kode',
         'nama',
         'status',
+        'is_default',
     ];
 
     public function getStatusLabelAttribute()

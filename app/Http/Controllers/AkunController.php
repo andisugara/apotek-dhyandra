@@ -19,12 +19,18 @@ class AkunController extends Controller
                     $statusClass = $row->status == '1' ? 'badge-light-success' : 'badge-light-danger';
                     return '<span class="badge ' . $statusClass . '">' . $row->status_label . '</span>';
                 })
+                ->addColumn('is_default_label', function ($row) {
+                    if ($row->is_default) {
+                        return '<span class="badge badge-light-primary">Default</span>';
+                    }
+                    return '';
+                })
                 ->addColumn('action', function ($row) {
                     $actionBtn = '<a href="' . route('akun.edit', $row->id) . '" class="btn btn-sm btn-primary">Edit</a> ';
                     $actionBtn .= '<button type="button" class="btn btn-sm btn-danger btn-delete" data-id="' . $row->id . '">Hapus</button>';
                     return $actionBtn;
                 })
-                ->rawColumns(['status_label', 'action'])
+                ->rawColumns(['status_label', 'is_default_label', 'action'])
                 ->make(true);
         }
 
@@ -65,6 +71,14 @@ class AkunController extends Controller
             }
         }
 
+        // Handle is_default logic
+        $validated['is_default'] = isset($request->is_default) ? true : false;
+
+        // If this account is set as default, remove default status from other accounts
+        if ($validated['is_default']) {
+            Akun::where('is_default', true)->update(['is_default' => false]);
+        }
+
         Akun::create($validated);
         return redirect()->route('akun.index')->with('success', 'Akun berhasil ditambahkan');
     }
@@ -97,6 +111,17 @@ class AkunController extends Controller
         if (!str_starts_with($validated['kode'], 'AKN')) {
             $validated['kode'] = 'AKN' . $validated['kode'];
         }
+
+        // Handle is_default logic
+        $validated['is_default'] = isset($request->is_default) ? true : false;
+
+        // If this account is set as default, remove default status from other accounts
+        if ($validated['is_default'] && !$akun->is_default) {
+            Akun::where('is_default', true)->update(['is_default' => false]);
+        }
+
+        // If this account was the default and is no longer default, we don't need to do anything special
+        // as no other account is being set as default
 
         $akun->update($validated);
         return redirect()->route('akun.index')->with('success', 'Akun berhasil diperbarui');

@@ -100,7 +100,7 @@ class PengeluaranController extends Controller
             $pengeluaran->save();
 
             // Get kas akun (adjust as needed based on your system)
-            $kasAkunId = 1; // Default cash account, adjust based on your system setup
+            $kasAkunId = Akun::where('is_default', true)->first()->id;
 
             // 1. Jurnal kas - Uang keluar dari kas (kredit)
             TransaksiAkun::create([

@@ -22,6 +22,7 @@
                         <th>Kode</th>
                         <th>Nama</th>
                         <th>Status</th>
+                        <th>Default</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -80,6 +81,12 @@
                     {
                         data: 'status_label',
                         name: 'status',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'is_default_label',
+                        name: 'is_default',
                         orderable: false,
                         searchable: false
                     },

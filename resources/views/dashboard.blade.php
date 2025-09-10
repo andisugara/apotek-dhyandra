@@ -15,6 +15,24 @@
         .card.hoverable:hover {
             transform: translateY(-5px);
         }
+
+        /* Loading state for charts */
+        .opacity-50 {
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+            position: relative;
+        }
+
+        .opacity-50::after {
+            content: "Loading...";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+        }
     </style>
 @endsection
 
@@ -670,273 +688,322 @@
 @endsection
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.min.js"></script>
     <script>
-        // Prepare sales chart data with defaults
-        var salesChartData = @json($dailySalesChartData['data'] ?? []);
-        var salesChartLabels = @json($dailySalesChartData['labels'] ?? []);
-
-        // Daily sales chart
-        var salesChartOptions = {
-            series: [{
-                name: 'Penjualan',
-                data: salesChartData
-            }],
-            chart: {
-                type: 'area',
-                height: 350,
-                toolbar: {
-                    show: false
-                },
-                zoom: {
-                    enabled: false
-                }
-            },
-            colors: ['#3E97FF'],
-            dataLabels: {
-                enabled: false
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 3
-            },
-            xaxis: {
-                categories: salesChartLabels,
-                axisBorder: {
-                    show: false,
-                },
-                axisTicks: {
-                    show: false
-                },
-                labels: {
-                    style: {
-                        fontSize: '12px'
-                    }
-                }
-            },
-            yaxis: {
-                labels: {
-                    formatter: function(value) {
-                        return 'Rp ' + formatNumber(value);
-                    },
-                    style: {
-                        fontSize: '12px'
-                    }
-                }
-            },
-            legend: {
-                show: false
-            },
-            fill: {
-                opacity: 0.3,
-                type: 'gradient',
-                gradient: {
-                    shade: 'light',
-                    type: "vertical",
-                    shadeIntensity: 0.5,
-                    opacityFrom: 0.7,
-                    opacityTo: 0.2,
-                    stops: [0, 100]
-                }
-            },
-            grid: {
-                borderColor: '#f1f1f1',
-                strokeDashArray: 4,
-                yaxis: {
-                    lines: {
-                        show: true
-                    }
-                }
-            },
-            markers: {
-                size: 4,
-                colors: ['#3E97FF'],
-                strokeColors: '#FFFFFF',
-                strokeWidth: 2,
-                hover: {
-                    size: 7
-                }
-            },
-            tooltip: {
-                y: {
-                    formatter: function(value) {
-                        return 'Rp ' + formatNumber(value);
-                    }
-                }
-            }
-        };
-
-        // Create the sales chart
-        try {
-            if (document.getElementById('salesChart')) {
-                if (salesChartData && salesChartData.length > 0) {
-                    var salesChart = new ApexCharts(document.querySelector('#salesChart'), salesChartOptions);
-                    salesChart.render();
-                } else {
-                    document.getElementById('salesChart').innerHTML =
-                        '<div class="text-center py-5"><span class="fs-6 text-gray-500">Tidak ada data penjualan untuk ditampilkan</span></div>';
-                }
-            }
-        } catch (error) {
-            console.error("Error rendering sales chart:", error);
-            if (document.getElementById('salesChart')) {
-                document.getElementById('salesChart').innerHTML =
-                    '<div class="text-center py-5"><span class="fs-6 text-gray-500">Terjadi kesalahan saat memuat grafik</span></div>';
-            }
-        }
-
-        // Prepare expense chart data with defaults
-        var expenseChartData = @json($expenseChartData['data'] ?? []);
-        var expenseChartLabels = @json($expenseChartData['labels'] ?? []);
-
-        // Expense chart (donut)
-        var expenseChartOptions = {
-            series: expenseChartData,
-            chart: {
-                type: 'donut',
-                height: 250,
-                toolbar: {
-                    show: false
-                }
-            },
-            labels: expenseChartLabels,
-            colors: ['#3E97FF', '#50CD89', '#F1416C', '#FFC700', '#7239EA'],
-            plotOptions: {
-                pie: {
-                    donut: {
-                        size: '65%',
-                        labels: {
-                            show: true,
-                            total: {
-                                show: true,
-                                showAlways: true,
-                                formatter: function(w) {
-                                    const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-                                    return 'Rp ' + formatNumber(total);
-                                },
-                                fontSize: '16px',
-                                fontWeight: 'bold'
-                            }
-                        }
-                    }
-                }
-            },
-            dataLabels: {
-                enabled: false
-            },
-            legend: {
-                show: false
-            },
-            responsive: [{
-                breakpoint: 480,
-                options: {
-                    chart: {
-                        width: 200
-                    },
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }],
-            tooltip: {
-                y: {
-                    formatter: function(value) {
-                        return 'Rp ' + formatNumber(value);
-                    }
-                }
-            }
-        };
-
-        // Create the expense chart
-        try {
-            if (document.getElementById('expenseChart')) {
-                if (expenseChartData && expenseChartData.length > 0) {
-                    var expenseChart = new ApexCharts(document.getElementById('expenseChart'), expenseChartOptions);
-                    expenseChart.render();
-                } else {
-                    document.getElementById('expenseChart').innerHTML =
-                        '<div class="text-center py-5"><span class="fs-6 text-gray-500">Tidak ada data pengeluaran untuk ditampilkan</span></div>';
-                }
-            }
-        } catch (error) {
-            console.error("Error rendering expense chart:", error);
-            if (document.getElementById('expenseChart')) {
-                document.getElementById('expenseChart').innerHTML =
-                    '<div class="text-center py-5"><span class="fs-6 text-gray-500">Terjadi kesalahan saat memuat grafik</span></div>';
-            }
-        }
-
         // Format numbers with thousand separator
         function formatNumber(number) {
             return new Intl.NumberFormat('id-ID').format(number);
         }
 
-        // Handle period change for sales chart
-        if (document.getElementById('periodSelect')) {
-            document.getElementById('periodSelect').addEventListener('change', function() {
-                const period = this.value;
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prepare sales chart data with defaults - ensure we have valid arrays
+            var salesChartLabels = @json($dailySalesChartData['labels'] ?? []);
+            var salesChartData = @json($dailySalesChartData['data'] ?? []);
 
-                try {
-                    if (typeof salesChart !== 'undefined' && salesChart) {
-                        // Show loading state
-                        salesChart.updateOptions({
-                            chart: {
-                                animations: {
-                                    enabled: false
+            // Ensure data is properly formatted for ApexCharts
+            if (!Array.isArray(salesChartLabels)) salesChartLabels = [];
+            if (!Array.isArray(salesChartData)) salesChartData = [];
+
+            // Convert any potential null values to 0
+            salesChartData = salesChartData.map(function(value) {
+                return value === null ? 0 : Number(value);
+            });
+
+            // Only initialize chart if we have the element in DOM
+            if (document.getElementById('salesChart')) {
+                if (salesChartLabels.length > 0 && salesChartData.length > 0) {
+                    // Daily sales chart options
+                    var salesChartOptions = {
+                        series: [{
+                            name: 'Penjualan',
+                            data: salesChartData
+                        }],
+                        chart: {
+                            type: 'area',
+                            height: 350,
+                            fontFamily: 'inherit',
+                            toolbar: {
+                                show: false
+                            },
+                            zoom: {
+                                enabled: false
+                            }
+                        },
+                        colors: ['#3E97FF'],
+                        dataLabels: {
+                            enabled: false
+                        },
+                        stroke: {
+                            curve: 'smooth',
+                            width: 3
+                        },
+                        xaxis: {
+                            categories: salesChartLabels,
+                            axisBorder: {
+                                show: false,
+                            },
+                            axisTicks: {
+                                show: false
+                            },
+                            labels: {
+                                style: {
+                                    fontSize: '12px'
                                 }
                             }
-                        });
+                        },
+                        yaxis: {
+                            labels: {
+                                formatter: function(value) {
+                                    return 'Rp ' + formatNumber(value);
+                                },
+                                style: {
+                                    fontSize: '12px'
+                                }
+                            }
+                        },
+                        legend: {
+                            show: false
+                        },
+                        fill: {
+                            opacity: 0.3,
+                            type: 'gradient',
+                            gradient: {
+                                shade: 'light',
+                                type: "vertical",
+                                shadeIntensity: 0.5,
+                                opacityFrom: 0.7,
+                                opacityTo: 0.2,
+                                stops: [0, 100]
+                            }
+                        },
+                        grid: {
+                            borderColor: '#f1f1f1',
+                            strokeDashArray: 4,
+                            yaxis: {
+                                lines: {
+                                    show: true
+                                }
+                            }
+                        },
+                        markers: {
+                            size: 4,
+                            colors: ['#3E97FF'],
+                            strokeColors: '#FFFFFF',
+                            strokeWidth: 2,
+                            hover: {
+                                size: 7
+                            }
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function(value) {
+                                    return 'Rp ' + formatNumber(value);
+                                }
+                            }
+                        }
+                    };
+
+                    // Create the sales chart
+                    try {
+                        var salesChart = new ApexCharts(document.getElementById('salesChart'), salesChartOptions);
+                        salesChart.render();
+                    } catch (error) {
+                        console.error("Error rendering sales chart:", error);
+                        document.getElementById('salesChart').innerHTML =
+                            '<div class="text-center py-5"><span class="fs-6 text-gray-500">Terjadi kesalahan saat memuat grafik</span></div>';
+                    }
+                } else {
+                    document.getElementById('salesChart').innerHTML =
+                        '<div class="text-center py-5"><span class="fs-6 text-gray-500">Tidak ada data penjualan untuk ditampilkan</span></div>';
+                }
+            }
+
+            // Expense chart initialization
+            if (document.getElementById('expenseChart')) {
+                // Prepare expense chart data with defaults
+                var expenseChartLabels = @json($expenseChartData['labels'] ?? []);
+                var expenseChartData = @json($expenseChartData['data'] ?? []);
+
+                // Ensure data is properly formatted for ApexCharts
+                if (!Array.isArray(expenseChartLabels)) expenseChartLabels = [];
+                if (!Array.isArray(expenseChartData)) expenseChartData = [];
+
+                // Convert any potential null values to 0
+                expenseChartData = expenseChartData.map(function(value) {
+                    return value === null ? 0 : Number(value);
+                });
+
+                if (expenseChartLabels.length > 0 && expenseChartData.length > 0) {
+                    // Expense chart (donut) configuration
+                    var expenseChartOptions = {
+                        series: expenseChartData,
+                        chart: {
+                            type: 'donut',
+                            height: 250,
+                            fontFamily: 'inherit',
+                            toolbar: {
+                                show: false
+                            }
+                        },
+                        labels: expenseChartLabels,
+                        colors: ['#3E97FF', '#50CD89', '#F1416C', '#FFC700', '#7239EA'],
+                        plotOptions: {
+                            pie: {
+                                donut: {
+                                    size: '65%',
+                                    labels: {
+                                        show: true,
+                                        total: {
+                                            show: true,
+                                            showAlways: true,
+                                            formatter: function(w) {
+                                                const total = w.globals.seriesTotals.reduce((a, b) => a + b,
+                                                    0);
+                                                return 'Rp ' + formatNumber(total);
+                                            },
+                                            fontSize: '16px',
+                                            fontWeight: 'bold'
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        dataLabels: {
+                            enabled: false
+                        },
+                        legend: {
+                            show: false
+                        },
+                        responsive: [{
+                            breakpoint: 480,
+                            options: {
+                                chart: {
+                                    width: 200
+                                },
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }],
+                        tooltip: {
+                            y: {
+                                formatter: function(value) {
+                                    return 'Rp ' + formatNumber(value);
+                                }
+                            }
+                        }
+                    };
+
+                    // Create the expense chart
+                    try {
+                        var expenseChart = new ApexCharts(document.getElementById('expenseChart'),
+                            expenseChartOptions);
+                        expenseChart.render();
+                    } catch (error) {
+                        console.error("Error rendering expense chart:", error);
+                        document.getElementById('expenseChart').innerHTML =
+                            '<div class="text-center py-5"><span class="fs-6 text-gray-500">Terjadi kesalahan saat memuat grafik</span></div>';
+                    }
+                } else {
+                    document.getElementById('expenseChart').innerHTML =
+                        '<div class="text-center py-5"><span class="fs-6 text-gray-500">Tidak ada data pengeluaran untuk ditampilkan</span></div>';
+                }
+            }
+
+            // Format numbers with thousand separator
+            function formatNumber(number) {
+                return new Intl.NumberFormat('id-ID').format(number);
+            }
+
+            // Handle period change for sales chart
+            if (document.getElementById('periodSelect')) {
+                document.getElementById('periodSelect').addEventListener('change', function() {
+                    const period = this.value;
+
+                    // Show a loading indicator
+                    if (document.getElementById('salesChart')) {
+                        document.getElementById('salesChart').classList.add('opacity-50');
                     }
 
                     // Get updated data via AJAX
                     fetch(`{{ route('dashboard.data') }}?period=${period}`)
-                        .then(response => response.json())
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
                         .then(data => {
                             try {
-                                if (typeof salesChart !== 'undefined' && salesChart) {
-                                    // Update chart data
-                                    const chartData = data.chartData.data || [];
-                                    const chartLabels = data.chartData.labels || [];
+                                // Process chart data - ensure we have valid data
+                                let chartData = data.chartData.data || [];
+                                let chartLabels = data.chartData.labels || [];
 
+                                // Convert any potential null values to 0
+                                chartData = chartData.map(function(value) {
+                                    return value === null ? 0 : Number(value);
+                                });
+
+                                // Update the chart if it exists
+                                if (typeof salesChart !== 'undefined' && salesChart) {
+                                    // Update series data first
                                     salesChart.updateSeries([{
                                         name: 'Penjualan',
                                         data: chartData
                                     }]);
 
-                                    // Update chart categories
+                                    // Then update axis categories
                                     salesChart.updateOptions({
                                         xaxis: {
                                             categories: chartLabels
-                                        },
-                                        chart: {
-                                            animations: {
-                                                enabled: true
-                                            }
                                         }
                                     });
                                 }
+
+                                // Remove loading state
+                                if (document.getElementById('salesChart')) {
+                                    document.getElementById('salesChart').classList.remove(
+                                        'opacity-50');
+                                }
+
+                                // Update summary values
+                                if (document.getElementById('chartTotalSales')) {
+                                    document.getElementById('chartTotalSales').textContent = data
+                                        .totalSales;
+                                }
+                                if (document.getElementById('chartTotalExpenses')) {
+                                    document.getElementById('chartTotalExpenses').textContent = data
+                                        .totalExpenses;
+                                }
+                                if (document.getElementById('chartNetProfit')) {
+                                    document.getElementById('chartNetProfit').textContent = data
+                                        .netProfit;
+                                }
                             } catch (updateError) {
                                 console.error("Error updating chart:", updateError);
-                            }
 
-                            // Update summary values
-                            if (document.getElementById('chartTotalSales')) {
-                                document.getElementById('chartTotalSales').textContent = data.totalSales;
-                            }
-                            if (document.getElementById('chartTotalExpenses')) {
-                                document.getElementById('chartTotalExpenses').textContent = data.totalExpenses;
-                            }
-                            if (document.getElementById('chartNetProfit')) {
-                                document.getElementById('chartNetProfit').textContent = data.netProfit;
+                                // Show error message if update fails
+                                if (document.getElementById('salesChart')) {
+                                    document.getElementById('salesChart').classList.remove(
+                                        'opacity-50');
+                                    document.getElementById('salesChart').innerHTML =
+                                        '<div class="text-center py-5"><span class="fs-6 text-gray-500">Terjadi kesalahan saat memperbarui grafik</span></div>';
+                                }
                             }
                         })
                         .catch(error => {
                             console.error('Error fetching chart data:', error);
+
+                            // Show error message if fetch fails
+                            if (document.getElementById('salesChart')) {
+                                document.getElementById('salesChart').classList.remove('opacity-50');
+                                document.getElementById('salesChart').innerHTML =
+                                    '<div class="text-center py-5"><span class="fs-6 text-gray-500">Gagal memuat data grafik</span></div>';
+                            }
                         });
-                } catch (eventError) {
-                    console.error("Error in period change event:", eventError);
-                }
-            });
-        }
+                });
+            }
+        });
     </script>
 @endpush

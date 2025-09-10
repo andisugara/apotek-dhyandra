@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Akun;
 use App\Models\Obat;
 use App\Models\Pasien;
 use App\Models\Penjualan;
@@ -149,8 +150,8 @@ class PenjualanController extends Controller
             // Create accounting transaction for cash sales
             if ($penjualan->jenis === 'TUNAI') {
                 // Get kas akun (adjust as needed based on your system)
-                $kasAkunId = 1; // Default, adjust this based on your system setup
-                $pendapatanAkunId = 1; // Akun pendapatan penjualan, sesuaikan dengan sistem Anda
+                $kasAkunId = Akun::where('is_default', true)->first()->id; // Default, adjust this based on your system setup
+                $pendapatanAkunId = Akun::where('is_default', true)->first()->id; // Akun pendapatan penjualan, sesuaikan dengan sistem Anda
 
                 // 1. Jurnal kas - Uang masuk ke kas (debit)
                 TransaksiAkun::create([
