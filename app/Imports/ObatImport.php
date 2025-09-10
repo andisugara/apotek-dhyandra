@@ -44,7 +44,6 @@ class ObatImport implements ToCollection, WithHeadingRow,  WithBatchInserts, Wit
                 $kodeObat = trim((string)($row[2] ?? ''));
                 $namaObat = trim((string)($row[3] ?? ''));
                 if ($kodeObat === '' || $kodeObat === '-') {
-                    dd($row);
                     $this->addError($rowNumber, 'Kode obat harus diisi (tidak boleh kosong atau "-").');
                     continue;
                 }
