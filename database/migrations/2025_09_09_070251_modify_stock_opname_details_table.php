@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::table('stock_opname_details', function (Blueprint $table) {
             // Modify existing columns
-            $table->string('no_batch', 50)->nullable()->change();
-            $table->date('tanggal_expired')->nullable()->change();
-            $table->string('tindakan')->nullable()->change();
+            $table->string('no_batch', 50)->nullable();
+            $table->date('tanggal_expired')->nullable();
+            $table->string('tindakan')->nullable();
         });
     }
 
@@ -25,9 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('stock_opname_details', function (Blueprint $table) {
-            // Revert changes
-            $table->string('no_batch', 50)->nullable(false)->change();
-            $table->date('tanggal_expired')->nullable(false)->change();
+            $table->dropColumn(['no_batch', 'tanggal_expired', 'tindakan']);
         });
     }
 };
