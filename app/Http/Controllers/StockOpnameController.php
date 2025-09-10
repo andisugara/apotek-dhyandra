@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
 class StockOpnameController extends Controller
@@ -94,7 +93,7 @@ class StockOpnameController extends Controller
      */
     public function create()
     {
-        $locations = LokasiObat::all();
+        $locations = LokasiObat::where('is_active', true)->get();
 
         // Generate unique stock opname code
         $todayCode = 'SO-' . date('Ymd');
@@ -141,6 +140,7 @@ class StockOpnameController extends Controller
                 ->with('success', 'Stock opname berhasil dibuat, silahkan lanjutkan dengan menambahkan obat.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error creating stock opname: ' . $e->getMessage());
 
             return redirect()->back()
                 ->withInput()
@@ -169,7 +169,8 @@ class StockOpnameController extends Controller
         }
 
         $stockOpname->load(['details', 'details.obat', 'details.satuan', 'details.lokasi']);
-        $locations = LokasiObat::all();
+        // Just get the active locations for default selection
+        $locations = LokasiObat::where('is_active', true)->get();
 
         return view('stock_opname.edit', compact('stockOpname', 'locations'));
     }
@@ -203,6 +204,7 @@ class StockOpnameController extends Controller
                 ->with('success', 'Stock opname berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error updating stock opname: ' . $e->getMessage());
 
             return redirect()->back()
                 ->withInput()
@@ -229,13 +231,18 @@ class StockOpnameController extends Controller
 
             DB::commit();
 
-            return redirect()->route('stock_opname.index')
-                ->with('success', 'Stock opname berhasil dihapus.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock opname berhasil dihapus.'
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error deleting stock opname: ' . $e->getMessage());
 
-            return redirect()->route('stock_opname.index')
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -244,83 +251,139 @@ class StockOpnameController extends Controller
      */
     public function searchObat(Request $request)
     {
-        $lokasi_id = $request->lokasi_id;
         $keyword = $request->q;
 
+        // Log the search request with all request details for debugging
+        Log::info('Search obat request', [
+            'keyword' => $keyword,
+            'request_all' => $request->all(),
+            'headers' => $request->headers->all(),
+            'method' => $request->method()
+        ]);
+
+        // Return empty if no keyword or keyword too short
+        if (empty($keyword) || strlen($keyword) < 2) {
+            return response()->json([
+                'results' => [],
+                'pagination' => ['more' => false]
+            ]);
+        }
+
         try {
-            $obats = Obat::with(['stok' => function ($query) use ($lokasi_id) {
-                $query->where('lokasi_id', $lokasi_id);
-            }])
-                ->where(function ($query) use ($keyword) {
-                    $query->where('nama_obat', 'like', "%{$keyword}%")
+            // Search for medicines matching the keyword in name or code
+            $obats = Obat::query()
+                ->where(function ($q) use ($keyword) {
+                    $q->where('nama_obat', 'like', "%{$keyword}%")
                         ->orWhere('kode_obat', 'like', "%{$keyword}%");
                 })
+                ->select('id', 'nama_obat', 'kode_obat')
                 ->limit(10)
                 ->get();
 
+            // Format results in Select2 compatible format
+            $results = [];
+
+            foreach ($obats as $obat) {
+                $results[] = [
+                    'id' => $obat->id,
+                    'text' => $obat->nama_obat . ' (' . $obat->kode_obat . ')',
+                ];
+            }
+
             // Log successful search
             Log::info('Search obat success', [
-                'lokasi_id' => $lokasi_id,
                 'keyword' => $keyword,
-                'results_count' => $obats->count()
+                'results_count' => count($results),
+                'results' => $results
             ]);
 
-            return response()->json($obats);
+            return response()->json([
+                'results' => $results,
+                'pagination' => ['more' => false]
+            ]);
         } catch (\Exception $e) {
             // Log error
             Log::error('Search obat error', [
-                'lokasi_id' => $lokasi_id,
                 'keyword' => $keyword,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => $e->getMessage(),
+                'results' => []
+            ], 500);
         }
     }
 
     /**
-     * Get stock details for a medicine
+     * Get stock details for a medicine including all available units
      */
     public function getStokDetail(Request $request)
     {
+        // Log the incoming request with headers for debugging
+        Log::info('Get stock detail request', [
+            'obat_id' => $request->obat_id,
+            'method' => $request->method(),
+            'has_token' => $request->hasHeader('X-CSRF-TOKEN'),
+            'token' => $request->header('X-CSRF-TOKEN') ? 'present' : 'missing',
+            'message' => 'Getting stock without location dependency'
+        ]);
+
         $obat_id = $request->obat_id;
-        $lokasi_id = $request->lokasi_id;
+        $lokasi_id = $request->lokasi_id ?? LokasiObat::where('is_active', true)->first()->id;
 
         try {
             // Validate input
-            if (!$obat_id || !$lokasi_id) {
+            if (!$obat_id) {
                 Log::warning('Invalid parameters for getStokDetail', [
-                    'obat_id' => $obat_id,
-                    'lokasi_id' => $lokasi_id
+                    'obat_id' => $obat_id
                 ]);
-                return response()->json(['error' => 'Obat ID dan Lokasi ID diperlukan'], 400);
+                return response()->json(['error' => 'ID Obat diperlukan'], 400);
             }
 
-            $stoks = Stok::with(['satuan', 'lokasi'])
-                ->where('obat_id', $obat_id)
-                ->where('lokasi_id', $lokasi_id)
-                ->where('jumlah', '>', 0)
-                ->get();
+            // Get obat details with its units
+            $obat = Obat::with(['satuans.satuan'])->find($obat_id);
 
-            // Format dates to be Y-m-d for JavaScript date inputs
-            $stoks->each(function ($stok) {
-                if ($stok->tanggal_expired) {
-                    $stok->tanggal_expired = Carbon::parse($stok->tanggal_expired)->format('Y-m-d');
-                }
-            });
+            if (!$obat) {
+                return response()->json(['error' => 'Obat tidak ditemukan'], 404);
+            }
+
+            $result = [];
+
+            // Get all units for this obat
+            foreach ($obat->satuans as $obatSatuan) {
+                if (!$obatSatuan->satuan) continue;
+
+                // Calculate total stock for this medicine and unit regardless of location
+                $totalStok = Stok::where('obat_id', $obat_id)
+                    ->where('satuan_id', $obatSatuan->satuan_id)
+                    ->sum('qty');
+
+                // Ensure stock is not null
+                $totalStok = $totalStok ?: 0;
+
+                $result[] = [
+                    'obat_id' => $obat_id,
+                    'obat_nama' => $obat->nama_obat,
+                    'obat_kode' => $obat->kode_obat,
+                    'satuan_id' => $obatSatuan->satuan_id,
+                    'satuan_nama' => $obatSatuan->satuan->nama,
+                    'stok_sistem' => $totalStok,
+                ];
+            }
 
             Log::info('Get stok detail success', [
                 'obat_id' => $obat_id,
-                'lokasi_id' => $lokasi_id,
-                'results_count' => $stoks->count()
+                'results_count' => count($result)
             ]);
 
-            return response()->json($stoks);
+            return response()->json($result);
         } catch (\Exception $e) {
             Log::error('Get stok detail error', [
                 'obat_id' => $obat_id,
-                'lokasi_id' => $lokasi_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json(['error' => $e->getMessage()], 500);
@@ -338,17 +401,39 @@ class StockOpnameController extends Controller
         ]);
 
         try {
+            // Basic validation for direct addition
             $request->validate([
-                'obat_id' => 'required|exists:obats,id',
-                'satuan_id' => 'required|exists:satuan_obats,id',
-                'lokasi_id' => 'required|exists:lokasi_obats,id',
-                'no_batch' => 'required|string',
-                'tanggal_expired' => 'required|date',
-                'stok_sistem' => 'required|integer|min:0',
-                'stok_fisik' => 'required|integer|min:0',
-                'tindakan' => 'nullable|string',
-                'catatan' => 'nullable|string',
+                'obat_id' => 'required|exists:obat,id',
+                'stok_sistem' => 'nullable|numeric|min:0',
+                'stok_fisik' => 'nullable|numeric|min:0',
+                'keterangan' => 'nullable|string',
             ]);
+
+            // Check if satuan_id is missing, meaning it's a direct addition
+            if (!$request->has('satuan_id')) {
+                // Get the default unit for this medicine
+                $obat = Obat::with('satuans.satuan')->findOrFail($request->obat_id);
+
+                if ($obat->satuans->isEmpty()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Obat ini tidak memiliki satuan. Silahkan tambahkan satuan terlebih dahulu.'
+                    ], 422);
+                }
+
+                // Use the first unit as default
+                $firstSatuan = $obat->satuans->first();
+                $request->merge(['satuan_id' => $firstSatuan->satuan_id]);
+
+                // Ensure stok_sistem and stok_fisik have default values
+                if (!$request->has('stok_sistem')) {
+                    $request->merge(['stok_sistem' => 0]);
+                }
+
+                if (!$request->has('stok_fisik')) {
+                    $request->merge(['stok_fisik' => 0]);
+                }
+            }
 
             if ($stockOpname->status === 'selesai') {
                 return response()->json([
@@ -362,37 +447,36 @@ class StockOpnameController extends Controller
                 ->where('obat_id', $request->obat_id)
                 ->where('satuan_id', $request->satuan_id)
                 ->where('lokasi_id', $request->lokasi_id)
-                ->where('no_batch', $request->no_batch)
                 ->first();
 
             if ($existing) {
                 Log::warning('Item already exists in stock opname', ['detail' => $existing]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'Obat dengan batch yang sama sudah ada di stock opname ini.'
+                    'message' => 'Obat dengan satuan yang sama sudah ada di stock opname ini.'
                 ], 422);
             }
 
             DB::beginTransaction();
 
             try {
-                $selisih = (int)$request->stok_fisik - (int)$request->stok_sistem;
+                // Convert to float with proper decimal handling
+                $stokSistem = floatval($request->stok_sistem);
+                $stokFisik = floatval($request->stok_fisik);
+                $selisih = $stokFisik - $stokSistem;
 
-                // Parse and format tanggal_expired to ensure consistent format
-                $tanggalExpired = Carbon::parse($request->tanggal_expired)->format('Y-m-d');
+                // Round to 2 decimal places to avoid floating point precision issues
+                $selisih = round($selisih, 2);
 
                 $detail = StockOpnameDetail::create([
                     'stock_opname_id' => $stockOpname->id,
                     'obat_id' => $request->obat_id,
                     'satuan_id' => $request->satuan_id,
                     'lokasi_id' => $request->lokasi_id,
-                    'no_batch' => $request->no_batch,
-                    'tanggal_expired' => $tanggalExpired,
-                    'stok_sistem' => (int)$request->stok_sistem,
-                    'stok_fisik' => (int)$request->stok_fisik,
+                    'stok_sistem' => $stokSistem,
+                    'stok_fisik' => $stokFisik,
                     'selisih' => $selisih,
-                    'tindakan' => $request->tindakan,
-                    'catatan' => $request->catatan,
+                    'keterangan' => $request->keterangan,
                 ]);
 
                 Log::info('Successfully added obat to stock opname', ['detail' => $detail->id]);
@@ -471,6 +555,7 @@ class StockOpnameController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error removing item from stock opname: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -497,34 +582,21 @@ class StockOpnameController extends Controller
         DB::beginTransaction();
 
         try {
-            // Update stock opname status
+            // Update stock opname status to completed
             $stockOpname->update([
                 'status' => 'selesai'
             ]);
 
-            // Update stock quantities based on the physical count
-            foreach ($stockOpname->details as $detail) {
-                // If there's a difference between system and physical count
-                if ($detail->selisih !== 0) {
-                    $stok = Stok::where('obat_id', $detail->obat_id)
-                        ->where('satuan_id', $detail->satuan_id)
-                        ->where('lokasi_id', $detail->lokasi_id)
-                        ->where('no_batch', $detail->no_batch)
-                        ->first();
-
-                    if ($stok) {
-                        $stok->jumlah = $detail->stok_fisik;
-                        $stok->save();
-                    }
-                }
-            }
+            // No stock adjustments are made since this is just a checking procedure
+            // This is just for recording the stock state at a point in time
 
             DB::commit();
 
             return redirect()->route('stock_opname.show', $stockOpname)
-                ->with('success', 'Stock opname berhasil diselesaikan dan stok telah diperbarui.');
+                ->with('success', 'Stock opname berhasil diselesaikan.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error completing stock opname: ' . $e->getMessage());
 
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());

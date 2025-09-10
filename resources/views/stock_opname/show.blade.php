@@ -133,12 +133,10 @@
                                 <th>Obat</th>
                                 <th>Satuan</th>
                                 <th>Lokasi</th>
-                                <th>Batch</th>
-                                <th>Expired</th>
                                 <th>Stok Sistem</th>
                                 <th>Stok Fisik</th>
                                 <th>Selisih</th>
-                                <th>Tindakan</th>
+                                <th>Keterangan</th>
                             </tr>
                         </thead>
                         <tbody class="text-gray-600 fw-semibold">
@@ -147,20 +145,20 @@
                                     <td>{{ $detail->obat->nama_obat }}</td>
                                     <td>{{ $detail->satuan->nama }}</td>
                                     <td>{{ $detail->lokasi->nama }}</td>
-                                    <td>{{ $detail->no_batch }}</td>
-                                    <td>{{ date('d/m/Y', strtotime($detail->tanggal_expired)) }}</td>
-                                    <td>{{ $detail->stok_sistem }}</td>
-                                    <td>{{ $detail->stok_fisik }}</td>
+                                    <td>{{ number_format($detail->stok_sistem, 2) }}</td>
+                                    <td>{{ number_format($detail->stok_fisik, 2) }}</td>
                                     <td>
                                         @if ($detail->selisih > 0)
-                                            <span class="text-success">+{{ $detail->selisih }}</span>
+                                            <span
+                                                class="badge badge-light-success">+{{ number_format($detail->selisih, 2) }}</span>
                                         @elseif($detail->selisih < 0)
-                                            <span class="text-danger">{{ $detail->selisih }}</span>
+                                            <span
+                                                class="badge badge-light-danger">{{ number_format($detail->selisih, 2) }}</span>
                                         @else
-                                            <span class="text-muted">0</span>
+                                            <span class="badge badge-light-primary">0</span>
                                         @endif
                                     </td>
-                                    <td>{{ $detail->tindakan ?? '-' }}</td>
+                                    <td>{{ $detail->keterangan ?? '-' }}</td>
                                 </tr>
                             @empty
                                 <tr>

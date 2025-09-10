@@ -4,7 +4,7 @@
     <div class="card">
         <div class="card-header border-0 pt-6">
             <div class="card-title">
-                <h3>Tambah Stock Opname</h3>
+                <h3>Buat Stock Opname</h3>
             </div>
             <div class="card-toolbar">
                 <a href="{{ route('stock_opname.index') }}" class="btn btn-secondary">
@@ -16,17 +16,17 @@
             <form action="{{ route('stock_opname.store') }}" method="POST" id="formStockOpname">
                 @csrf
                 <div class="row mb-5">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group mb-5">
                             <label class="required form-label">Kode Stock Opname</label>
                             <input type="text" name="kode" class="form-control @error('kode') is-invalid @enderror"
-                                placeholder="Kode Stock Opname" value="{{ $kode }}" readonly />
+                                placeholder="Kode stock opname" value="{{ old('kode', $kode) }}" readonly />
                             @error('kode')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group mb-5">
                             <label class="required form-label">Tanggal</label>
                             <input type="date" name="tanggal" class="form-control @error('tanggal') is-invalid @enderror"
@@ -39,25 +39,22 @@
                 </div>
                 <div class="row mb-5">
                     <div class="col-md-12">
-                        <div class="form-group mb-5">
+                        <div class="form-group">
                             <label class="form-label">Keterangan</label>
                             <textarea name="keterangan" class="form-control @error('keterangan') is-invalid @enderror" rows="3"
-                                placeholder="Keterangan stock opname">{{ old('keterangan') }}</textarea>
+                                placeholder="Keterangan stock opname (opsional)">{{ old('keterangan') }}</textarea>
                             @error('keterangan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
                 </div>
-
-                <div class="separator separator-dashed my-8"></div>
-
                 <div class="d-flex justify-content-end">
-                    <button type="reset" class="btn btn-light me-3">
-                        <i class="ki-duotone ki-arrows-circle fs-2"></i>Reset
-                    </button>
-                    <button type="submit" class="btn btn-primary" id="submitButton">
-                        <i class="ki-duotone ki-check fs-2"></i>Simpan
+                    <button type="submit" class="btn btn-primary" id="btnSimpan">
+                        <i class="ki-duotone ki-save-2 fs-2"></i>Simpan & Lanjutkan
+                        <span class="indicator-progress">Menyimpan...
+                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                        </span>
                     </button>
                 </div>
             </form>
@@ -68,34 +65,29 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
-            // Form validation using jQuery Validation
+            // Form validation
             $("#formStockOpname").validate({
                 rules: {
-                    tanggal: {
+                    kode: {
                         required: true
+                    },
+                    tanggal: {
+                        required: true,
+                        date: true
                     }
                 },
                 messages: {
+                    kode: {
+                        required: "Kode stock opname harus diisi"
+                    },
                     tanggal: {
-                        required: "Tanggal harus diisi"
+                        required: "Tanggal harus diisi",
+                        date: "Format tanggal tidak valid"
                     }
-                },
-                errorElement: "span",
-                errorPlacement: function(error, element) {
-                    error.addClass("invalid-feedback");
-                    element.closest(".form-group").append(error);
-                },
-                highlight: function(element, errorClass, validClass) {
-                    $(element).addClass("is-invalid").removeClass("is-valid");
-                },
-                unhighlight: function(element, errorClass, validClass) {
-                    $(element).removeClass("is-invalid").addClass("is-valid");
                 },
                 submitHandler: function(form) {
                     // Show loading indicator
-                    $("#submitButton").attr("data-kt-indicator", "on").prop("disabled", true);
-
-                    // Submit the form
+                    $('#btnSimpan').attr('data-kt-indicator', 'on').prop('disabled', true);
                     form.submit();
                 }
             });

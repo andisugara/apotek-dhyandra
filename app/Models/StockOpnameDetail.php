@@ -18,20 +18,16 @@ class StockOpnameDetail extends Model
         'obat_id',
         'satuan_id',
         'lokasi_id',
-        'no_batch',
-        'tanggal_expired',
         'stok_sistem',
         'stok_fisik',
         'selisih',
-        'tindakan',
-        'catatan',
+        'keterangan',
     ];
 
     protected $casts = [
-        'tanggal_expired' => 'date',
-        'stok_sistem' => 'integer',
-        'stok_fisik' => 'integer',
-        'selisih' => 'integer',
+        'stok_sistem' => 'decimal:2',
+        'stok_fisik' => 'decimal:2',
+        'selisih' => 'decimal:2',
     ];
 
     // Relationships

@@ -88,12 +88,11 @@ if (!function_exists('getMenu')) {
             // Menus for Apoteker
             if ($user->role && $user->role->name === 'Apoteker') {
                 $menu[] = [
-                    'title' => 'Data',
-                    'icon'  => 'ki-abstract-26',
+                    'title' => 'Pembelian',
+                    'icon'  => 'ki-tag',
                     'children' => [
-                        ['title' => 'Supplier', 'route' => 'supplier.index'],
-                        ['title' => 'Pasien', 'route' => 'pasien.index'],
-                        ['title' => 'Data Obat', 'route' => 'obat.index'],
+                        ['title' => 'Pembelian Obat', 'route' => 'pembelian.index'],
+                        ['title' => 'Retur Obat', 'route' => 'retur_pembelian.index'],
                     ],
                 ];
 
@@ -101,12 +100,6 @@ if (!function_exists('getMenu')) {
                     'title' => 'Penjualan',
                     'route' => 'penjualan.index',
                     'icon'  => 'ki-purchase',
-                ];
-
-                $menu[] = [
-                    'title' => 'Stock Opname',
-                    'route' => 'stock_opname.index',
-                    'icon'  => 'ki-clipboard',
                 ];
             }
         }

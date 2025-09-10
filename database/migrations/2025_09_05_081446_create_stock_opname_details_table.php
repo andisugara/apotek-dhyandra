@@ -17,18 +17,16 @@ return new class extends Migration
             $table->unsignedBigInteger('obat_id');
             $table->unsignedBigInteger('satuan_id');
             $table->unsignedBigInteger('lokasi_id');
-            $table->string('no_batch', 50);
-            $table->date('tanggal_expired');
-            $table->integer('stok_sistem');
-            $table->integer('stok_fisik');
-            $table->integer('selisih');
-            $table->string('tindakan')->nullable();
-            $table->text('catatan')->nullable();
+            // No longer needed: no_batch and tanggal_expired
+            $table->decimal('stok_sistem', 10, 2);
+            $table->decimal('stok_fisik', 10, 2);
+            $table->decimal('selisih', 10, 2);
+            $table->text('keterangan')->nullable();
             $table->timestamps();
 
             $table->foreign('stock_opname_id')->references('id')->on('stock_opnames')->onDelete('cascade');
             $table->foreign('obat_id')->references('id')->on('obat')->onDelete('restrict');
-            $table->foreign('satuan_id')->references('id')->on('obat_satuan')->onDelete('restrict');
+            $table->foreign('satuan_id')->references('id')->on('satuan_obat')->onDelete('restrict');
             $table->foreign('lokasi_id')->references('id')->on('lokasi_obat')->onDelete('restrict');
         });
     }

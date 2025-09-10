@@ -87,120 +87,52 @@
                 <div class="card-body">
                     <form id="formAddObat" onsubmit="return false;">
                         <div class="row mb-5">
-                            <div class="col-md-6">
-                                <div class="form-group mb-5">
-                                    <label class="required form-label">Lokasi</label>
-                                    <select id="lokasi_id" class="form-select" data-control="select2"
-                                        data-placeholder="Pilih Lokasi">
-                                        <option value=""></option>
-                                        @foreach ($locations as $location)
-                                            <option value="{{ $location->id }}">{{ $location->nama }}</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="fv-plugins-message-container invalid-feedback lokasi-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
+                            <!-- Hidden input for location -->
+                            <input type="hidden" id="lokasi_id" value="{{ $locations->first()->id }}">
+                            <div class="col-md-12">
                                 <div class="form-group mb-5">
                                     <label class="required form-label">Obat</label>
                                     <select id="obat_id" class="form-select" data-control="select2"
-                                        data-placeholder="Pilih Obat" disabled>
+                                        data-placeholder="Cari Obat">
                                         <option value=""></option>
                                     </select>
                                     <div class="fv-plugins-message-container invalid-feedback obat-error"></div>
+                                    <small class="form-text text-muted mt-2">
+                                        Cari dan pilih obat untuk langsung menambahkannya ke daftar stock opname
+                                    </small>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row mb-5 d-none" id="detail_container">
-                            <div class="col-md-4">
-                                <div class="form-group mb-5">
-                                    <label class="required form-label">Satuan</label>
-                                    <select id="satuan_id" class="form-select" data-control="select2"
-                                        data-placeholder="Pilih Satuan">
-                                        <option value=""></option>
-                                    </select>
-                                    <div class="fv-plugins-message-container invalid-feedback satuan-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-5">
-                                    <label class="required form-label">No. Batch</label>
-                                    <input type="text" id="no_batch" class="form-control" placeholder="Nomor batch" />
-                                    <div class="fv-plugins-message-container invalid-feedback batch-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-5">
-                                    <label class="required form-label">Tanggal Expired</label>
-                                    <input type="date" id="tanggal_expired" class="form-control" />
-                                    <div class="fv-plugins-message-container invalid-feedback expired-error"></div>
-                                </div>
+                        <!-- Medicine units container - will be populated with units table -->
+                        <div id="detail_container" class="d-none"></div>
+
+                        <div class="alert alert-info d-flex align-items-center p-3 mb-3">
+                            <div class="d-flex flex-column">
+                                <h4 class="mb-1 text-info">Cara Penggunaan</h4>
+                                <span>1. Cari dan pilih obat dari dropdown di atas</span>
+                                <span>2. Semua satuan obat akan ditampilkan untuk pengecekan stok</span>
+                                <span>3. Isi stok fisik untuk setiap satuan dan tambahkan ke daftar</span>
+                                <span>4. Anda dapat menggunakan tombol "Tambahkan Semua Satuan" untuk menambahkan
+                                    sekaligus</span>
+                                <span>5. Setelah selesai menambahkan semua obat, klik tombol "Selesaikan" di bagian
+                                    atas</span>
                             </div>
                         </div>
 
-                        <div class="row mb-5 d-none" id="stok_container">
-                            <div class="col-md-4">
-                                <div class="form-group mb-5">
-                                    <label class="required form-label">Stok Sistem</label>
-                                    <div class="input-group">
-                                        <input type="number" id="stok_sistem" class="form-control" min="0"
-                                            readonly />
-                                        <span class="input-group-text">Unit</span>
-                                    </div>
-                                    <div class="fv-plugins-message-container invalid-feedback sistem-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-5">
-                                    <label class="required form-label">Stok Fisik</label>
-                                    <div class="input-group">
-                                        <input type="number" id="stok_fisik" class="form-control" min="0" />
-                                        <span class="input-group-text">Unit</span>
-                                    </div>
-                                    <div class="fv-plugins-message-container invalid-feedback fisik-error"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group mb-5">
-                                    <label class="form-label">Selisih</label>
-                                    <div class="input-group">
-                                        <input type="number" id="selisih" class="form-control" readonly />
-                                        <span class="input-group-text">Unit</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-5 d-none" id="tindakan_container">
-                            <div class="col-md-6">
-                                <div class="form-group mb-5">
-                                    <label class="form-label">Tindakan</label>
-                                    <select id="tindakan" class="form-select" data-control="select2"
-                                        data-placeholder="Pilih Tindakan">
-                                        <option value=""></option>
-                                        <option value="Penyesuaian stok">Penyesuaian stok</option>
-                                        <option value="Investigasi lebih lanjut">Investigasi lebih lanjut</option>
-                                        <option value="Kehilangan">Kehilangan</option>
-                                        <option value="Kadaluarsa">Kadaluarsa</option>
-                                        <option value="Rusak">Rusak</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-5">
-                                    <label class="form-label">Catatan</label>
-                                    <textarea id="catatan" class="form-control" rows="3" placeholder="Catatan tambahan"></textarea>
-                                </div>
-                            </div>
+                        <!-- Hidden inputs for compatibility -->
+                        <div class="d-none">
+                            <input type="hidden" id="stok_sistem" value="0" />
+                            <input type="hidden" id="stok_fisik" value="0" />
+                            <input type="hidden" id="selisih" value="0" />
+                            <input type="hidden" id="satuan_id" value="" />
+                            <input type="hidden" id="keterangan" value="" />
                         </div>
 
                         <div class="d-flex justify-content-end">
-                            <button type="button" class="btn btn-primary" id="btn_tambah_obat">
-                                <i class="ki-duotone ki-plus-square fs-2"></i>Tambah Obat
-                                <span class="indicator-progress">Menambahkan...
-                                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                </span>
+                            <button type="button" class="btn btn-primary btn-sm me-3" onclick="resetForm()"
+                                id="btn_tambah_obat">
+                                <i class="ki-duotone ki-plus fs-2"></i> Tambahkan Obat
                             </button>
                         </div>
                     </form>
@@ -219,11 +151,11 @@
                                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                                     <th>Obat</th>
                                     <th>Satuan</th>
-                                    <th>Batch</th>
-                                    <th>Expired</th>
+                                    <th>Lokasi</th>
                                     <th>Stok Sistem</th>
                                     <th>Stok Fisik</th>
                                     <th>Selisih</th>
+                                    <th>Keterangan</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -232,8 +164,7 @@
                                     <tr id="detail-{{ $detail->id }}">
                                         <td>{{ $detail->obat->nama_obat }}</td>
                                         <td>{{ $detail->satuan->nama }}</td>
-                                        <td>{{ $detail->no_batch }}</td>
-                                        <td>{{ date('d/m/Y', strtotime($detail->tanggal_expired)) }}</td>
+                                        <td>{{ $detail->lokasi->nama }}</td>
                                         <td>{{ $detail->stok_sistem }}</td>
                                         <td>{{ $detail->stok_fisik }}</td>
                                         <td>
@@ -245,6 +176,7 @@
                                                 <span class="badge badge-light-primary">0</span>
                                             @endif
                                         </td>
+                                        <td>{{ $detail->keterangan ?: '-' }}</td>
                                         <td>
                                             <button type="button" class="btn btn-icon btn-light-danger btn-sm"
                                                 onclick="removeObat('{{ $detail->id }}')">
@@ -274,20 +206,751 @@
 
 @push('scripts')
     <script>
-        // Set up CSRF token for all AJAX requests
+        // Function to save all satuan items at once
+        function saveAllSatuanItems() {
+            // Check if there are items to add
+            if ($('#satuan_items tr').length === 0) {
+                toastr.warning('Silahkan pilih obat terlebih dahulu');
+                return;
+            }
+
+            // Get only valid rows (not disabled or already added)
+            const rows = $('#satuan_items tr:not(.bg-light-success)');
+
+            if (rows.length === 0) {
+                toastr.warning('Tidak ada satuan yang dapat ditambahkan');
+                return;
+            }
+
+            // Disable the button and show loading indicator
+            $('#add_all_units').attr('data-kt-indicator', 'on').prop('disabled', true);
+
+            let successCount = 0;
+            let errorCount = 0;
+            const totalCount = rows.length;
+
+            // Process rows one by one to avoid race conditions
+            function processRow(index) {
+                if (index >= rows.length) {
+                    // All rows processed, show summary
+                    setTimeout(function() {
+                        $('#add_all_units').removeAttr('data-kt-indicator').prop('disabled', false);
+
+                        if (successCount > 0 && errorCount === 0) {
+                            toastr.success(
+                                `Berhasil menambahkan ${successCount} satuan ke stock opname`);
+                            // Reload the page to show updated data
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else if (successCount > 0 && errorCount > 0) {
+                            toastr.warning(
+                                `Berhasil: ${successCount}, Gagal: ${errorCount}. Beberapa satuan tidak dapat ditambahkan`
+                            );
+                        } else if (errorCount > 0) {
+                            toastr.error(`Gagal menambahkan ${errorCount} satuan`);
+                        }
+                    }, 500);
+                    return;
+                }
+
+                const row = $(rows[index]);
+                const satuanId = row.data('satuan-id');
+                const stokSistem = parseFloat(row.data('stok-sistem')) || 0;
+
+                // IMPORTANT: Get the current values directly from the inputs right before sending
+                // This ensures we capture any changes made by the user
+                const inputElement = row.find('.stok-fisik-input');
+                const stokFisik = parseFloat(inputElement.val()) || 0;
+                const keterangan = row.find('.keterangan-input').val() || '';
+
+                const obatId = $('#obat_id').val();
+                const lokasiId = $('#lokasi_id').val();
+                const obatNama = $('#obat_id option:selected').text();
+                const satuanNama = row.find('td:first').text().trim();
+
+                // Skip if already added
+                if (row.hasClass('bg-light-success')) {
+                    processRow(index + 1);
+                    return;
+                }
+
+                // Add loading state to the row
+                row.addClass('bg-light-warning');
+
+                // Debug log to check values before sending
+                console.log(
+                    `Adding ${satuanNama} with stok_fisik: ${stokFisik} (input value: ${inputElement.val()}), stok_sistem: ${stokSistem}`
+                );
+
+                // Prepare data with explicit token
+                const data = {
+                    obat_id: obatId,
+                    satuan_id: satuanId,
+                    lokasi_id: lokasiId,
+                    stok_sistem: stokSistem,
+                    stok_fisik: stokFisik,
+                    keterangan: keterangan,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                };
+
+                // Send request
+                $.ajax({
+                    url: "{{ route('stock_opname.add_obat', $stockOpname) }}",
+                    method: 'POST',
+                    data: data,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            successCount++;
+                            // Mark row as added
+                            row.removeClass('bg-light-warning').addClass('bg-light-success');
+                            row.find('input').prop('disabled', true);
+                        } else {
+                            errorCount++;
+                            row.removeClass('bg-light-warning').addClass('bg-light-danger');
+                            console.error('Error adding item:', response.message);
+                            toastr.error(response.message || 'Gagal menambahkan obat');
+                        }
+                    },
+                    error: function(xhr) {
+                        errorCount++;
+                        row.removeClass('bg-light-warning').addClass('bg-light-danger');
+                        console.error('AJAX error:', xhr.responseText);
+
+                        let errorMessage = 'Gagal menambahkan obat';
+                        if (xhr.status === 419) {
+                            errorMessage = 'CSRF token mismatch. Coba refresh halaman dan coba lagi.';
+                        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        toastr.error(errorMessage);
+                    },
+                    complete: function() {
+                        // Process the next row
+                        processRow(index + 1);
+                    }
+                });
+            }
+
+            // Start processing rows from index 0
+            processRow(0);
+        }
+
+        // Function to reset the form when Add Medicine button is clicked
+        function resetForm() {
+            console.log('Resetting form');
+            $('#obat_id').val(null).trigger('change');
+            $('#detail_container').addClass('d-none').html('');
+        }
+
+        // Function to save all satuan items at once
+        function saveAllSatuanItems() {
+            // Check if there are items to add
+            if ($('#satuan_items tr').length === 0) {
+                toastr.warning('Silahkan pilih obat terlebih dahulu');
+                return;
+            }
+
+            // Get only valid rows (not disabled or already added)
+            const rows = $('#satuan_items tr:not(.bg-light-success)');
+
+            if (rows.length === 0) {
+                toastr.warning('Tidak ada satuan yang dapat ditambahkan');
+                return;
+            }
+
+            // Disable the button and show loading indicator
+            $('#add_all_units').attr('data-kt-indicator', 'on').prop('disabled', true);
+
+            let successCount = 0;
+            let errorCount = 0;
+            const totalCount = rows.length;
+
+            // Process rows one by one to avoid race conditions
+            function processRow(index) {
+                if (index >= rows.length) {
+                    // All rows processed, show summary
+                    setTimeout(function() {
+                        $('#add_all_units').removeAttr('data-kt-indicator').prop('disabled', false);
+
+                        if (successCount > 0 && errorCount === 0) {
+                            toastr.success(
+                                `Berhasil menambahkan ${successCount} satuan ke stock opname`);
+                            // Reload the page to show updated data
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else if (successCount > 0 && errorCount > 0) {
+                            toastr.warning(
+                                `Berhasil: ${successCount}, Gagal: ${errorCount}. Beberapa satuan tidak dapat ditambahkan`
+                            );
+                        } else if (errorCount > 0) {
+                            toastr.error(`Gagal menambahkan ${errorCount} satuan`);
+                        }
+                    }, 500);
+                    return;
+                }
+
+                const row = $(rows[index]);
+                const satuanId = row.data('satuan-id');
+                const stokSistem = parseFloat(row.data('stok-sistem')) || 0;
+
+                // IMPORTANT: Get the current values directly from the inputs right before sending
+                // This ensures we capture any changes made by the user
+                const inputElement = row.find('.stok-fisik-input');
+                const stokFisik = parseFloat(inputElement.val()) || 0;
+                const keterangan = row.find('.keterangan-input').val() || '';
+
+                const obatId = $('#obat_id').val();
+                const lokasiId = $('#lokasi_id').val();
+                const obatNama = $('#obat_id option:selected').text();
+                const satuanNama = row.find('td:first').text().trim();
+
+                // Skip if already added
+                if (row.hasClass('bg-light-success')) {
+                    processRow(index + 1);
+                    return;
+                }
+
+                // Add loading state to the row
+                row.addClass('bg-light-warning');
+
+                // Debug log to check values before sending
+                console.log(
+                    `Adding ${satuanNama} with stok_fisik: ${stokFisik} (input value: ${inputElement.val()}), stok_sistem: ${stokSistem}`
+                );
+
+                // Prepare data with explicit token
+                const data = {
+                    obat_id: obatId,
+                    satuan_id: satuanId,
+                    lokasi_id: lokasiId,
+                    stok_sistem: stokSistem,
+                    stok_fisik: stokFisik,
+                    keterangan: keterangan,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                };
+
+                // Send request
+                $.ajax({
+                    url: "{{ route('stock_opname.add_obat', $stockOpname) }}",
+                    method: 'POST',
+                    data: data,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            successCount++;
+                            // Mark row as added
+                            row.removeClass('bg-light-warning').addClass('bg-light-success');
+                            row.find('input').prop('disabled', true);
+                        } else {
+                            errorCount++;
+                            row.removeClass('bg-light-warning').addClass('bg-light-danger');
+                            console.error('Error adding item:', response.message);
+                            toastr.error(response.message || 'Gagal menambahkan obat');
+                        }
+                    },
+                    error: function(xhr) {
+                        errorCount++;
+                        row.removeClass('bg-light-warning').addClass('bg-light-danger');
+                        console.error('AJAX error:', xhr.responseText);
+
+                        let errorMessage = 'Gagal menambahkan obat';
+                        if (xhr.status === 419) {
+                            errorMessage = 'CSRF token mismatch. Coba refresh halaman dan coba lagi.';
+                        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        toastr.error(errorMessage);
+                    },
+                    complete: function() {
+                        // Process the next row
+                        processRow(index + 1);
+                    }
+                });
+            }
+
+            // Start processing rows from index 0
+            processRow(0);
+        }
+
+        // Set up CSRF token for all AJAX requests with stronger configuration
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader('X-CSRF-TOKEN', $('meta[name="csrf-token"]').attr('content'));
+            },
+            error: function(xhr, status, error) {
+                if (xhr.status === 419) {
+                    toastr.error('Sesi habis, silahkan refresh halaman');
+                    console.error('CSRF token mismatch. Page will refresh in 3 seconds.');
+                    setTimeout(function() {
+                        location.reload();
+                    }, 3000);
+                }
             }
         });
 
+        // Reset form after obat selection changes
+        function resetObatForm() {
+            $('#detail_container').addClass('d-none');
+            $('#satuan_items').empty();
+            $('#stok_sistem, #stok_fisik, #selisih, #keterangan').val('');
+        }
+
+        // Check if a satuan is already added to stock opname
+        function checkIfSatuanAlreadyAdded(obatId, satuanId) {
+            let isAdded = false;
+            $('#details_table tbody tr').each(function() {
+                if ($(this).attr('id') && $(this).attr('id').startsWith('detail-')) {
+                    const detailRow = $(this);
+                    const obatName = detailRow.find('td:eq(0)').text().trim();
+                    const satuanName = detailRow.find('td:eq(1)').text().trim();
+                    const selectedObatName = $('#obat_id option:selected').text().trim();
+                    const selectedSatuanName = $(`#satuan_items tr[data-satuan-id="${satuanId}"] td:first`)
+                        .text()
+                        .trim();
+
+                    if (obatName === selectedObatName && satuanName === selectedSatuanName) {
+                        isAdded = true;
+                        return false; // Break the loop
+                    }
+                }
+            });
+            return isAdded;
+        }
+
+        // Function to get all units for a selected medicine and show them in a table
+        function addSelectedMedicineToForm(obatId, obatName, lokasiId) {
+            if (!obatId || !obatName) {
+                toastr.error('Mohon pilih obat terlebih dahulu');
+                return;
+            }
+
+            // Show loading state
+            $('#detail_container').removeClass('d-none').html(`
+                <div class="d-flex justify-content-center my-10">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `);
+
+            // Get stock details for all units of this medicine
+            $.ajax({
+                url: "{{ route('stock_opname.get_stok_detail') }}",
+                method: 'GET',
+                data: {
+                    obat_id: obatId,
+                    lokasi_id: lokasiId,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    console.log('Stock details response:', response);
+
+                    // Check if we got any units
+                    if (Array.isArray(response) && response.length > 0) {
+                        // Create a table to display all units
+                        let html = `
+                                        <div class="card shadow-sm mb-5">
+                                            <div class="card-header">
+                                                <h3 class="card-title">Satuan Obat ${obatName}</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-row-bordered table-row-dashed gy-4">
+                                                        <thead>
+                                                            <tr class="fw-bold fs-6 text-gray-800">
+                                                                <th>Satuan</th>
+                                                                <th>Stok Sistem</th>
+                                                                <th>Stok Fisik</th>
+                                                                <th>Keterangan</th>
+                                                                <th>Aksi</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="satuan_items">
+                                    `;
+
+                        // Add rows for each unit
+                        response.forEach(item => {
+                            html += `
+                                    <tr id="row-${item.satuan_id}" data-satuan-id="${item.satuan_id}" data-stok-sistem="${item.stok_sistem}">
+                                        <td>${item.satuan_nama}</td>
+                                        <td>${item.stok_sistem}</td>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm stok-fisik-input" value="${item.stok_sistem}" min="0" step="any">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm keterangan-input" placeholder="Keterangan">
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-primary add-satuan-btn" data-satuan-id="${item.satuan_id}">
+                                                <i class="ki-duotone ki-plus-circle fs-2"></i> Tambahkan
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                        });
+
+                        html += `
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-5">
+                                        <button type="button" class="btn btn-success btn-sm" id="add_all_units" onclick="saveAllSatuanItems()">
+                                            <i class="ki-duotone ki-check-circle fs-2"></i> Tambahkan Semua Satuan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        // Display the table
+                        $('#detail_container').html(html);
+
+                        // Add event handler for individual add buttons
+                        $('.add-satuan-btn').on('click', function() {
+                            const row = $(this).closest('tr');
+                            const satuanId = row.data('satuan-id');
+                            const stokSistem = row.data('stok-sistem');
+                            const satuanNama = row.find('td:first').text().trim();
+
+                            addObatToStockOpname(
+                                obatId,
+                                satuanId,
+                                lokasiId,
+                                stokSistem,
+                                '', // Will be captured in the function
+                                '', // Will be captured in the function
+                                obatName,
+                                satuanNama
+                            );
+                        });
+                    } else {
+                        $('#detail_container').html(`
+                            <div class="alert alert-warning">
+                                <div class="d-flex flex-column">
+                                    <h4 class="mb-1 text-warning">Tidak ada satuan yang ditemukan</h4>
+                                    <span>Obat ini tidak memiliki satuan yang terdaftar.</span>
+                                </div>
+                            </div>
+                        `);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error response:', xhr.responseText);
+
+                    let errorMessage = 'Terjadi kesalahan saat mendapatkan detail stok';
+
+                    if (xhr.status === 419) {
+                        errorMessage = 'Sesi habis, silahkan refresh halaman';
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+
+                    $('#detail_container').html(`
+                        <div class="alert alert-danger">
+                            <div class="d-flex flex-column">
+                                <h4 class="mb-1 text-danger">Error</h4>
+                                <span>${errorMessage}</span>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        // Old loadSatuanTable function is removed and replaced with the direct approach above
+
+        // Function to add obat to stock opname
+        function addObatToStockOpname(obatId, satuanId, lokasiId, stokSistem, stokFisik, keterangan, obatNama,
+            satuanNama) {
+            // Always get the current values directly from the inputs when the function is called
+            const row = $(`#row-${satuanId}`);
+            const inputElement = row.find('.stok-fisik-input');
+            const currentStokFisik = inputElement.val();
+            const currentKeterangan = row.find('.keterangan-input').val();
+
+            // Prepare data - make sure to use parseFloat for numeric values
+            const data = {
+                obat_id: obatId,
+                satuan_id: satuanId,
+                lokasi_id: lokasiId,
+                stok_sistem: parseFloat(stokSistem) || 0,
+                stok_fisik: parseFloat(currentStokFisik) || 0, // Use the current value from the input
+                keterangan: currentKeterangan, // Use the current value from the input
+                _token: $('meta[name="csrf-token"]').attr('content')
+            };
+
+            // Add loading indicator to button
+            const button = $(`button[data-satuan-id="${satuanId}"]`);
+            button.html(
+                '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menambahkan...'
+            );
+            button.prop('disabled', true);
+
+            // Debug log to check values before sending
+            console.log(
+                `Adding ${satuanNama} with stok_fisik: ${data.stok_fisik} (input value: ${inputElement.val()}), stok_sistem: ${data.stok_sistem}`
+            );
+
+            // Send request with explicit headers
+            $.ajax({
+                url: "{{ route('stock_opname.add_obat', $stockOpname) }}",
+                method: 'POST',
+                data: data,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    console.log('Success response:', response);
+
+                    if (response.success) {
+                        // Show success message
+                        toastr.success(`Berhasil menambahkan ${obatNama} (${satuanNama}) ke stock opname`);
+
+                        // Disable the row after adding
+                        $(`#row-${satuanId}`).addClass('bg-light-success');
+                        $(`#row-${satuanId} input`).prop('disabled', true);
+                        button.html('<i class="ki-duotone ki-check fs-2"></i> Ditambahkan');
+
+                        // Reload the page to show updated data
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        toastr.error(response.message || 'Gagal menambahkan obat');
+                        button.html('<i class="ki-duotone ki-plus-circle fs-2"></i> Tambahkan');
+                        button.prop('disabled', false);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    button.html('<i class="ki-duotone ki-plus-circle fs-2"></i> Tambahkan');
+                    button.prop('disabled', false);
+                    console.error('Error response:', xhr.responseText);
+
+                    if (xhr.status === 419) {
+                        toastr.error('CSRF token mismatch. Coba refresh halaman dan coba lagi.');
+                    } else if (xhr.responseJSON) {
+                        if (xhr.responseJSON.errors) {
+                            // Display validation errors
+                            let errorMessages = [];
+                            $.each(xhr.responseJSON.errors, function(key, value) {
+                                errorMessages.push(value);
+                            });
+
+                            toastr.error(errorMessages.join('<br>'));
+                        } else if (xhr.responseJSON.message) {
+                            toastr.error(xhr.responseJSON.message);
+                        }
+                    } else {
+                        toastr.error('Terjadi kesalahan saat menambahkan obat: ' + error);
+                    }
+                }
+            });
+        }
+
+        // Remove medicine from stock opname
+        function removeObat(detailId) {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Obat ini akan dihapus dari stock opname",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return new Promise((resolve, reject) => {
+                        // Use AJAX to delete the item
+                        $.ajax({
+                            url: "{{ route('stock_opname.remove_obat', ['stockOpname' => $stockOpname->id, 'detail' => ':detailId']) }}"
+                                .replace(':detailId', detailId),
+                            type: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function(response) {
+                                resolve(response);
+                            },
+                            error: function(xhr, status, error) {
+                                let errorMessage = 'Gagal menghapus obat';
+
+                                if (xhr.status === 419) {
+                                    errorMessage =
+                                        'CSRF token mismatch. Coba refresh halaman dan coba lagi.';
+                                } else if (xhr.responseJSON && xhr.responseJSON
+                                    .message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+
+                                Swal.showValidationMessage(errorMessage);
+                                reject(error);
+                            }
+                        });
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Obat berhasil dihapus dari stock opname.',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+
+                    // Remove the item from the table
+                    $(`#detail-${detailId}`).fadeOut(300, function() {
+                        $(this).remove();
+
+                        // Check if there are no more items in the table
+                        if ($('#detail_items tr').length === 0) {
+                            $('#detail_items').html(`<tr id="no-data-row">
+                                <td colspan="8" class="text-center py-4">Belum ada data obat</td>
+                            </tr>`);
+                        }
+                    });
+                }
+            });
+        }
+
         $(document).ready(function() {
-            // Initialize Select2
-            $('#lokasi_id, #obat_id, #satuan_id, #tindakan').select2({
-                minimumResultsForSearch: 10
+            // Debug CSRF token to make sure it's available
+            console.log('CSRF Token:', $('meta[name="csrf-token"]').attr('content'));
+
+            // Debug routes to make sure they're correct
+            console.log('Search route:', "{{ route('stock_opname.search_obat') }}");
+            console.log('Stock detail route:', "{{ route('stock_opname.get_stok_detail') }}");
+
+            // Location is now hidden and automatically set
+
+            // Initialize Select2 for obat with AJAX
+            $('#obat_id').select2({
+                placeholder: 'Pilih Obat',
+                allowClear: true,
+                minimumInputLength: 2,
+                ajax: {
+                    url: "{{ route('stock_opname.search_obat') }}",
+                    dataType: 'json',
+                    delay: 250,
+                    method: 'GET',
+                    cache: true,
+                    data: function(params) {
+                        console.log('Search params:', params);
+                        return {
+                            q: params.term || ''
+                        };
+                    },
+                    processResults: function(data) {
+                        console.log('Received data:', data);
+
+                        // Check for errors
+                        if (data.error) {
+                            toastr.error('Error: ' + data.error);
+                            return {
+                                results: []
+                            };
+                        }
+
+                        // Return the results directly if in correct format
+                        if (data.results) {
+                            return data;
+                        }
+
+                        // Fallback for backward compatibility
+                        return {
+                            results: []
+                        };
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', xhr, status, error);
+                        console.error('Error status:', xhr.status);
+                        console.error('Response text:', xhr.responseText);
+
+                        // Show detailed error message
+                        let errorMsg = 'Error saat mencari obat';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg += ': ' + xhr.responseJSON.message;
+                        } else if (error) {
+                            errorMsg += ': ' + error;
+                        }
+
+                        toastr.error(errorMsg);
+                    }
+                },
+                language: {
+                    inputTooShort: function() {
+                        return "Masukkan minimal 2 karakter untuk mencari obat";
+                    },
+                    searching: function() {
+                        return "Mencari obat...";
+                    },
+                    noResults: function() {
+                        return "Tidak ada obat yang ditemukan";
+                    }
+                },
+                templateResult: formatObatResult,
+                templateSelection: formatObatSelection,
+                escapeMarkup: function(markup) {
+                    return markup; // Allow HTML in results
+                }
             });
 
-            // Form Update Validation
+            // Format result for Select2 obat search
+            function formatObatResult(data) {
+                if (data.loading) return data.text;
+                if (!data.id) return data.text;
+
+                try {
+                    return $(`
+                        <div class="d-flex flex-column p-1">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">${data.text}</span>
+                            </div>
+                        </div>
+                    `);
+                } catch (e) {
+                    console.error("Error rendering obat template:", e);
+                    return data.text;
+                }
+            }
+
+            // Format selection for obat search
+            function formatObatSelection(data) {
+                if (!data.id) return data.text;
+                return $(
+                    `<span><i class="ki-duotone ki-capsule fs-4 me-2 text-primary"></i>${data.text}</span>`);
+            }
+
+            // Handle obat selection - show all units for the selected medicine
+            $('#obat_id').on('select2:select', function(e) {
+                const data = e.params.data;
+                const obatId = data.id;
+                const lokasiId = $('#lokasi_id').val();
+                const obatName = data.text || '';
+
+                console.log('Selected obat:', data);
+
+                // Get and display all units for this medicine
+                addSelectedMedicineToForm(obatId, obatName, lokasiId);
+
+                // Change the add button text
+                $('#btn_tambah_obat').html(
+                    '<i class="ki-duotone ki-plus fs-2"></i> Tambahkan Obat Lain');
+
+                // Don't clear the selection yet - let the user see what they selected
+            }); // Form Update Validation
             $("#formUpdate").validate({
                 submitHandler: function(form) {
                     $('#btnSimpan').attr('data-kt-indicator', 'on').prop('disabled', true);
@@ -308,297 +971,17 @@
                     cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        $('#btnComplete').attr('data-kt-indicator', 'on').prop('disabled', true);
+                        $('#btnComplete').attr('data-kt-indicator', 'on').prop('disabled',
+                            true);
                         $('#formComplete').submit();
                     }
                 });
             });
 
-            // Handle location selection
-            $('#lokasi_id').on('change', function() {
-                const lokasi_id = $(this).val();
-                if (lokasi_id) {
-                    $('#obat_id').prop('disabled', false).val('').trigger('change');
-                    resetObatForm();
-                } else {
-                    $('#obat_id').prop('disabled', true).val('').trigger('change');
-                    resetObatForm();
-                }
-            });
+            // The resetForm function is defined globally now
+            // The click handler is replaced by the onclick attribute
 
-            // Setup obat select2 with AJAX
-            $('#obat_id').select2({
-                ajax: {
-                    url: "{{ route('stock_opname.search_obat') }}",
-                    dataType: 'json',
-                    delay: 250,
-                    data: function(params) {
-                        return {
-                            q: params.term || '',
-                            lokasi_id: $('#lokasi_id').val()
-                        };
-                    },
-                    processResults: function(data) {
-                        if (data.error) {
-                            toastr.error('Error: ' + data.error);
-                            return {
-                                results: []
-                            };
-                        }
-
-                        return {
-                            results: $.map(data, function(item) {
-                                return {
-                                    text: item.nama_obat + ' (' + item.kode_obat + ')',
-                                    id: item.id,
-                                    data: item
-                                };
-                            })
-                        };
-                    },
-                    cache: false,
-                    error: function(xhr, status, error) {
-                        toastr.error('Error saat mencari obat: ' + error);
-                        console.error('AJAX error:', status, error);
-                    }
-                },
-                minimumInputLength: 2,
-                language: {
-                    inputTooShort: function() {
-                        return "Masukkan minimal 2 karakter untuk mencari obat";
-                    },
-                    searching: function() {
-                        return "Mencari obat...";
-                    },
-                    noResults: function() {
-                        return "Tidak ada obat yang ditemukan";
-                    }
-                }
-            }).on('select2:select', function(e) {
-                const obat = e.params.data.data;
-                resetObatForm();
-
-                // Show detail container
-                $('#detail_container').removeClass('d-none');
-
-                // Show loading indicator
-                $('#satuan_id').html('<option value="">Loading...</option>');
-
-                // Get stock details
-                $.ajax({
-                    url: "{{ route('stock_opname.get_stok_detail') }}",
-                    type: 'POST',
-                    data: {
-                        obat_id: obat.id,
-                        lokasi_id: $('#lokasi_id').val(),
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(response) {
-                        // Populate satuan dropdown
-                        const satuanSelect = $('#satuan_id');
-                        satuanSelect.empty();
-                        satuanSelect.append('<option value=""></option>');
-
-                        if (response.error) {
-                            toastr.error('Error: ' + response.error);
-                            return;
-                        }
-
-                        if (response.length > 0) {
-                            $.each(response, function(i, stok) {
-                                satuanSelect.append('<option value="' + stok.satuan.id +
-                                    '" data-stok="' + stok.jumlah +
-                                    '" data-batch="' + stok.no_batch +
-                                    '" data-expired="' + stok.tanggal_expired +
-                                    '">' + stok.satuan.nama + '</option>');
-                            });
-                            toastr.success('Data stok berhasil dimuat');
-                        } else {
-                            toastr.warning(
-                                'Tidak ada stok untuk obat ini di lokasi yang dipilih');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        toastr.error('Error saat memuat data stok: ' + error);
-                        console.error('AJAX error:', status, error, xhr.responseText);
-                    }
-                });
-            });
-
-            // Handle satuan selection
-            $('#satuan_id').on('change', function() {
-                const selected = $(this).find(':selected');
-                if (selected.val()) {
-                    const stok = selected.data('stok');
-                    const batch = selected.data('batch');
-                    const expired = selected.data('expired');
-
-                    // Format the date correctly (from yyyy-mm-dd hh:mm:ss to yyyy-mm-dd)
-                    const formattedDate = expired ? expired.split(' ')[0] : '';
-
-                    $('#no_batch').val(batch);
-                    $('#tanggal_expired').val(formattedDate);
-                    $('#stok_sistem').val(stok);
-                    $('#stok_fisik').val(stok);
-                    $('#selisih').val(0);
-
-                    // Show stock containers
-                    $('#stok_container, #tindakan_container').removeClass('d-none');
-                } else {
-                    $('#stok_container, #tindakan_container').addClass('d-none');
-                    $('#no_batch, #tanggal_expired, #stok_sistem, #stok_fisik, #selisih').val('');
-                }
-            });
-
-            // Calculate difference between system and physical stock
-            $('#stok_fisik').on('input', function() {
-                const sistem = parseInt($('#stok_sistem').val()) || 0;
-                const fisik = parseInt($(this).val()) || 0;
-                const selisih = fisik - sistem;
-                $('#selisih').val(selisih);
-
-                // Suggest tindakan based on selisih
-                if (selisih < 0) {
-                    $('#tindakan').val('Investigasi lebih lanjut').trigger('change');
-                } else if (selisih > 0) {
-                    $('#tindakan').val('Penyesuaian stok').trigger('change');
-                } else {
-                    $('#tindakan').val('').trigger('change');
-                }
-            });
-
-            // Add medicine to stock opname
-            $('#btn_tambah_obat').on('click', function() {
-                const button = $(this);
-                button.attr('data-kt-indicator', 'on');
-
-                // Reset validation errors
-                $('.is-invalid').removeClass('is-invalid');
-                $('.invalid-feedback').text('');
-
-                // Validate form
-                let isValid = true;
-                let errors = {};
-
-                if (!$('#lokasi_id').val()) {
-                    isValid = false;
-                    errors.lokasi = 'Lokasi harus dipilih';
-                    $('#lokasi_id').addClass('is-invalid');
-                    $('.lokasi-error').text('Lokasi harus dipilih');
-                }
-
-                if (!$('#obat_id').val()) {
-                    isValid = false;
-                    errors.obat = 'Obat harus dipilih';
-                    $('#obat_id').addClass('is-invalid');
-                    $('.obat-error').text('Obat harus dipilih');
-                }
-
-                if (!$('#satuan_id').val()) {
-                    isValid = false;
-                    errors.satuan = 'Satuan harus dipilih';
-                    $('#satuan_id').addClass('is-invalid');
-                    $('.satuan-error').text('Satuan harus dipilih');
-                }
-
-                if (!$('#no_batch').val()) {
-                    isValid = false;
-                    errors.batch = 'No. Batch harus diisi';
-                    $('#no_batch').addClass('is-invalid');
-                    $('.batch-error').text('No. Batch harus diisi');
-                }
-
-                if (!$('#tanggal_expired').val()) {
-                    isValid = false;
-                    errors.expired = 'Tanggal expired harus diisi';
-                    $('#tanggal_expired').addClass('is-invalid');
-                    $('.expired-error').text('Tanggal expired harus diisi');
-                }
-
-                if (!$('#stok_sistem').val()) {
-                    isValid = false;
-                    errors.sistem = 'Stok sistem harus diisi';
-                    $('#stok_sistem').addClass('is-invalid');
-                    $('.sistem-error').text('Stok sistem harus diisi');
-                }
-
-                if (!$('#stok_fisik').val()) {
-                    isValid = false;
-                    errors.fisik = 'Stok fisik harus diisi';
-                    $('#stok_fisik').addClass('is-invalid');
-                    $('.fisik-error').text('Stok fisik harus diisi');
-                }
-
-                if (!isValid) {
-                    button.removeAttr('data-kt-indicator');
-                    return;
-                }
-
-                // Prepare data
-                const data = {
-                    obat_id: $('#obat_id').val(),
-                    satuan_id: $('#satuan_id').val(),
-                    lokasi_id: $('#lokasi_id').val(),
-                    no_batch: $('#no_batch').val(),
-                    tanggal_expired: $('#tanggal_expired').val(),
-                    stok_sistem: $('#stok_sistem').val(),
-                    stok_fisik: $('#stok_fisik').val(),
-                    tindakan: $('#tindakan').val() || '',
-                    catatan: $('#catatan').val() || '',
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                };
-
-                console.log('Sending data:', data);
-
-                // Send request
-                $.ajax({
-                    url: "{{ route('stock_opname.add_obat', $stockOpname) }}",
-                    method: 'POST',
-                    data: data,
-                    success: function(response) {
-                        console.log('Success response:', response);
-
-                        if (response.success) {
-                            // Show success message
-                            Swal.fire({
-                                title: 'Berhasil!',
-                                text: response.message,
-                                icon: 'success',
-                                confirmButtonText: 'OK'
-                            }).then((result) => {
-                                // Reload the page to show updated data
-                                location.reload();
-                            });
-                        } else {
-                            toastr.error(response.message);
-                            button.removeAttr('data-kt-indicator');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        button.removeAttr('data-kt-indicator');
-                        console.error('Error response:', xhr.responseText);
-
-                        if (xhr.responseJSON) {
-                            if (xhr.responseJSON.errors) {
-                                // Display validation errors
-                                let errorMessages = [];
-                                $.each(xhr.responseJSON.errors, function(key, value) {
-                                    errorMessages.push(value);
-                                    // Highlight the field with error
-                                    $('#' + key).addClass('is-invalid');
-                                    $('.' + key + '-error').text(value);
-                                });
-
-                                toastr.error(errorMessages.join('<br>'));
-                            } else if (xhr.responseJSON.message) {
-                                toastr.error(xhr.responseJSON.message);
-                            }
-                        } else {
-                            toastr.error('Terjadi kesalahan saat menambahkan obat: ' + error);
-                        }
-                    }
-                });
-            });
+            // The saveAllSatuanItems function has been moved outside the document ready block to make it globally accessible
 
             // Initialize DataTable
             $('#details_table').DataTable({
@@ -607,81 +990,20 @@
                 "searching": true,
                 "info": true,
                 "language": {
-                    "lengthMenu": "Tampilkan _MENU_",
-                    "zeroRecords": "Tidak ada data",
-                    "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    "infoEmpty": "Tidak ada data",
-                    "infoFiltered": "(disaring dari _MAX_ data)",
-                    "search": "Cari:",
+                    "lengthMenu": "Show _MENU_ entries",
+                    "zeroRecords": "No data available",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                    "infoEmpty": "Showing 0 to 0 of 0 entries",
+                    "infoFiltered": "(filtered from _MAX_ total entries)",
+                    "search": "Search:",
                     "paginate": {
-                        "first": "Pertama",
-                        "last": "Terakhir",
-                        "next": "Selanjutnya",
-                        "previous": "Sebelumnya"
+                        "first": "First",
+                        "last": "Last",
+                        "next": "Next",
+                        "previous": "Previous"
                     }
                 }
             });
         });
-
-        // Reset form after obat selection changes
-        function resetObatForm() {
-            $('#detail_container, #stok_container, #tindakan_container').addClass('d-none');
-            $('#satuan_id').empty().append('<option value=""></option>');
-            $('#no_batch, #tanggal_expired, #stok_sistem, #stok_fisik, #selisih, #catatan').val('');
-            $('#tindakan').val('').trigger('change');
-        }
-
-        // Remove medicine from stock opname
-        function removeObat(detailId) {
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Obat ini akan dihapus dari stock opname",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, hapus!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: "{{ route('stock_opname.remove_obat', ['stockOpname' => $stockOpname->id, 'detail' => '']) }}" +
-                            detailId,
-                        method: 'DELETE',
-                        data: {
-                            _token: $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                // Remove row from table
-                                $('#detail-' + detailId).fadeOut(300, function() {
-                                    $(this).remove();
-
-                                    // If no more items, show no-data message
-                                    if ($('#detail_items tr').length === 0) {
-                                        $('#detail_items').html(
-                                            '<tr id="no-data-row"><td colspan="8" class="text-center py-4">Belum ada data obat</td></tr>'
-                                        );
-                                    }
-                                });
-
-                                toastr.success(response.message);
-                            } else {
-                                toastr.error(response.message);
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('Error response:', xhr.responseText);
-
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                toastr.error(xhr.responseJSON.message);
-                            } else {
-                                toastr.error('Terjadi kesalahan saat menghapus obat: ' + error);
-                            }
-                        }
-                    });
-                }
-            });
-        }
     </script>
 @endpush
