@@ -68,6 +68,9 @@ Route::middleware(['role:Superadmin'])->group(function () {
     Route::resource('akun', AkunController::class);
 
     // Obat management
+    Route::get('obat/import', [ObatController::class, 'importForm'])->name('obat.import');
+    Route::post('obat/import', [ObatController::class, 'importProcess'])->name('obat.import.process');
+    Route::get('obat/template', [ObatController::class, 'downloadTemplate'])->name('obat.template');
     Route::resource('obat', ObatController::class);
     Route::post('obat/{obat}/satuan', [ObatController::class, 'addSatuan'])->name('obat.satuan.add');
     Route::delete('obat/{obat}/satuan/{satuan}', [ObatController::class, 'removeSatuan'])->name('obat.satuan.remove');

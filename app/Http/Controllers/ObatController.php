@@ -10,9 +10,11 @@ use App\Models\SatuanObat;
 use App\Models\LokasiObat;
 use App\Models\ObatSatuan;
 use App\Models\Stok;
+use App\Imports\ObatImport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
 class ObatController extends Controller
@@ -605,5 +607,182 @@ class ObatController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Show the form for importing obat data
+     */
+    public function importForm()
+    {
+        return view('obat.import');
+    }
+
+    /**
+     * Import obat data from Excel
+     */
+    public function importProcess(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:10240', // 10MB
+        ]);
+
+        try {
+            $import = new ObatImport();
+            Excel::import($import, $request->file('file'));
+
+            $results = $import->getResults();
+
+            return redirect()->route('obat.index')->with([
+                'success'        => "Import berhasil: {$results['success']} data berhasil diimport, {$results['error']} gagal",
+                'import_errors'  => $results['errors'],
+                'import_results' => $results,
+            ]);
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            return back()->withErrors(['file' => 'Format data tidak sesuai: ' . $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['file' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Download import template
+     */
+    public function downloadTemplate()
+    {
+        // Check if template folder exists, if not create it
+        $templateDir = public_path('templates');
+        if (!file_exists($templateDir)) {
+            mkdir($templateDir, 0755, true);
+        }
+
+        // Generate the template file if it doesn't exist
+        $filePath = public_path('templates/template_import_obat.xlsx');
+
+        if (!file_exists($filePath)) {
+            // Create the template Excel file
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Template Import Obat');
+
+            // Set headers
+            $headers = [
+                'No',
+                'Gudang',
+                'Kode Obat',
+                'Nama Obat',
+                'Stok Satuan Terkecil',
+                'Satuan Terkecil',
+                'Harga Beli',
+                'Harga Jual',
+                'Pabrik',
+                'Golongan',
+                'Kategori',
+                'Jenis Obat',
+                'Tanggal Expired',
+                'No Batch',
+                'Minimal Stok'
+            ];
+
+            // Set header style
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '4472C4'],
+                ],
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                ],
+            ];
+
+            // Apply headers and style
+            foreach ($headers as $key => $header) {
+                $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($key + 1);
+                $sheet->setCellValue($column . '1', $header);
+                $sheet->getStyle($column . '1')->applyFromArray($headerStyle);
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Add sample data
+            $sample = [
+                [
+                    1,
+                    'Gudang Utama',
+                    'OBT001',
+                    'Paracetamol',
+                    100,
+                    'Tablet',
+                    1500,
+                    2000,
+                    'Kimia Farma',
+                    'Analgesik',
+                    'Obat Bebas',
+                    'Tablet',
+                    '2025-12-31',
+                    'B12345',
+                    10
+                ],
+                [
+                    2,
+                    'Gudang Utama',
+                    'OBT002',
+                    'Amoxicillin',
+                    50,
+                    'Kapsul',
+                    2500,
+                    3500,
+                    'Kalbe Farma',
+                    'Antibiotik',
+                    'Obat Keras',
+                    'Kapsul',
+                    '2025-12-31',
+                    'B67890',
+                    15
+                ]
+            ];
+
+            // Add sample data to sheet
+            $row = 2;
+            foreach ($sample as $data) {
+                foreach ($data as $key => $value) {
+                    $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($key + 1);
+                    $sheet->setCellValue($column . $row, $value);
+                }
+                $row++;
+            }
+
+            // Add notes
+            $row = 5;
+            $sheet->setCellValue('A' . $row, 'CATATAN:');
+            $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+            $row++;
+
+            $notes = [
+                '1. Kolom No dan Gudang diabaikan dalam proses import',
+                '2. Kode Obat boleh dikosongkan, sistem akan generate otomatis',
+                '3. Nama Obat wajib diisi',
+                '4. Stok dan Satuan Terkecil wajib diisi',
+                '5. Pabrik, Golongan, dan Kategori akan otomatis dibuat jika belum ada',
+                '6. Jenis Obat: Tablet, Kapsul, Sirup, Salep, Serbuk, dll',
+                '7. Format Tanggal Expired: YYYY-MM-DD (contoh: 2025-12-31)'
+            ];
+
+            foreach ($notes as $note) {
+                $sheet->setCellValue('A' . $row, $note);
+                $sheet->mergeCells('A' . $row . ':H' . $row);
+                $sheet->getStyle('A' . $row)->getFont()->setItalic(true);
+                $row++;
+            }
+
+            // Write the file
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save($filePath);
+        }
+
+        return response()->download($filePath, 'template_import_obat.xlsx');
     }
 }

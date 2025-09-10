@@ -8,6 +8,9 @@
             </div>
             <div class="card-toolbar">
                 <div class="d-flex justify-content-end" data-kt-user-table-toolbar="base">
+                    <a href="{{ route('obat.import') }}" class="btn btn-success me-2">
+                        <i class="ki-duotone ki-file-up fs-2"></i>Import Obat
+                    </a>
                     <a href="{{ route('obat.create') }}" class="btn btn-primary">
                         <i class="ki-duotone ki-plus fs-2"></i>Tambah Obat
                     </a>
