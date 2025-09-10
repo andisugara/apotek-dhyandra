@@ -49,8 +49,8 @@ class LaporanLabaRugiController extends Controller
                     ->on('penjualan_details.satuan_id', '=', 'obat_satuan.satuan_id');
             })
             ->select(
-                DB::raw('SUM(penjualan_detail.total) as total_sales'),
-                DB::raw('SUM(obat_satuan.harga_beli * penjualan_detail.jumlah) as total_cost')
+                DB::raw('SUM(penjualan_details.total) as total_sales'),
+                DB::raw('SUM(penjualan_details.harga_beli * penjualan_details.jumlah) as total_cost')
             )
             ->whereBetween('penjualan.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
             ->first();
@@ -89,7 +89,7 @@ class LaporanLabaRugiController extends Controller
                 })
                 ->select(
                     DB::raw('SUM(penjualan_details.total) as total_sales'),
-                    DB::raw('SUM(obat_satuan.harga_beli * penjualan_details.jumlah) as total_cost')
+                    DB::raw('SUM(penjualan_details.harga_beli * penjualan_details.jumlah) as total_cost')
                 )
                 ->whereBetween('penjualans.tanggal_penjualan', [$monthStart, $monthEnd])
                 ->first();
@@ -159,15 +159,15 @@ class LaporanLabaRugiController extends Controller
         $endDate = $request->input('end_date');
 
         // Sales revenue and cost of goods sold
-        $salesData = PenjualanDetail::join('penjualan', 'penjualan.id', '=', 'penjualan_detail.penjualan_id')
-            ->join('obat', 'obat.id', '=', 'penjualan_detail.obat_id')
+        $salesData = PenjualanDetail::join('penjualan', 'penjualan.id', '=', 'penjualan_details.penjualan_id')
+            ->join('obat', 'obat.id', '=', 'penjualan_details.obat_id')
             ->join('obat_satuan', function ($join) {
                 $join->on('obat.id', '=', 'obat_satuan.obat_id')
-                    ->on('penjualan_detail.satuan_id', '=', 'obat_satuan.satuan_id');
+                    ->on('penjualan_details.satuan_id', '=', 'obat_satuan.satuan_id');
             })
             ->select(
-                DB::raw('SUM(penjualan_detail.total) as total_sales'),
-                DB::raw('SUM(obat_satuan.harga_beli * penjualan_detail.jumlah) as total_cost')
+                DB::raw('SUM(penjualan_details.total) as total_sales'),
+                DB::raw('SUM(penjualan_details.harga_beli * penjualan_details.jumlah) as total_cost')
             )
             ->whereBetween('penjualan.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
             ->first();

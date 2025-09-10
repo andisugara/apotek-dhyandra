@@ -17,6 +17,7 @@ class Pembelian extends Model
         'tanggal_faktur',
         'supplier_id',
         'jenis',
+        'status_pembayaran',
         'akun_kas_id',
         'tanggal_jatuh_tempo',
         'subtotal',
@@ -105,5 +106,40 @@ class Pembelian extends Model
             $diff = $today->diffInDays($jatuhTempo);
             return $diff <= 7 ? 'MENDEKATI JATUH TEMPO' : 'BELUM JATUH TEMPO';
         }
+    }
+
+    public function getStatusPembayaranFormattedAttribute()
+    {
+        if ($this->jenis !== 'HUTANG') {
+            return $this->jenis === 'TUNAI' ? 'LUNAS' : 'KONSINYASI';
+        }
+
+        $statusMap = [
+            'BELUM' => '<span class="badge badge-danger">BELUM LUNAS</span>',
+            'SEBAGIAN' => '<span class="badge badge-warning">DIBAYAR SEBAGIAN</span>',
+            'LUNAS' => '<span class="badge badge-success">LUNAS</span>',
+        ];
+
+        return $statusMap[$this->status_pembayaran] ?? $statusMap['BELUM'];
+    }
+
+    /**
+     * Update payment status for a credit purchase
+     *
+     * @param string $status Status pembayaran (BELUM, SEBAGIAN, LUNAS)
+     * @return bool Success status
+     */
+    public function updateStatusPembayaran($status)
+    {
+        if ($this->jenis !== 'HUTANG') {
+            return false;
+        }
+
+        if (!in_array($status, ['BELUM', 'SEBAGIAN', 'LUNAS'])) {
+            return false;
+        }
+
+        $this->status_pembayaran = $status;
+        return $this->save();
     }
 }

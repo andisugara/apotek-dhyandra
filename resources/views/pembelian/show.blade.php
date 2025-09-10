@@ -19,6 +19,27 @@
             </div>
         </div>
         <div class="card-body py-4">
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if (session('info'))
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    {{ session('info') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <!-- Data Pembelian -->
             <div class="row mb-6">
                 <div class="col-md-6">
@@ -70,7 +91,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <th class="w-25 fw-bolder text-muted">Status</th>
+                                <th class="w-25 fw-bolder text-muted">Status Jatuh Tempo</th>
                                 <td>:
                                     @php
                                         $status = $pembelian->status_jatuh_tempo;
@@ -91,6 +112,10 @@
                                     @endphp
                                     <span class="badge {{ $class }}">{{ $status }}</span>
                                 </td>
+                            </tr>
+                            <tr>
+                                <th class="w-25 fw-bolder text-muted">Status Pembayaran</th>
+                                <td>: {!! $pembelian->status_pembayaran_formatted !!}</td>
                             </tr>
                         @endif
                         <tr>
@@ -165,6 +190,55 @@
                 </table>
             </div>
 
+            @if ($pembelian->jenis == 'HUTANG' && $pembelian->status_pembayaran != 'LUNAS')
+                <div class="separator separator-dashed my-5"></div>
+
+                <h4 class="mb-5">Update Status Pembayaran</h4>
+
+                <div class="card card-bordered">
+                    <div class="card-body">
+                        <form action="{{ route('pembelian.update-status', $pembelian->id) }}" method="POST">
+                            @csrf
+                            <div class="row mb-6">
+                                <div class="col-lg-6">
+                                    <div class="mb-5">
+                                        <label class="form-label fw-bold">Status Pembayaran</label>
+                                        <select name="status_pembayaran" class="form-select">
+                                            <option value="BELUM"
+                                                {{ $pembelian->status_pembayaran == 'BELUM' ? 'selected' : '' }}>BELUM
+                                                LUNAS</option>
+                                            {{-- <option value="SEBAGIAN"
+                                                {{ $pembelian->status_pembayaran == 'SEBAGIAN' ? 'selected' : '' }}>DIBAYAR
+                                                SEBAGIAN</option> --}}
+                                            <option value="LUNAS"
+                                                {{ $pembelian->status_pembayaran == 'LUNAS' ? 'selected' : '' }}>LUNAS
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-5">
+                                        <label class="form-label fw-bold">Akun Kas</label>
+                                        <select name="akun_kas_id" class="form-select">
+                                            <option value="">-- Pilih Akun Kas --</option>
+                                            @foreach (App\Models\Akun::where('status', '1')->orderBy('nama')->get() as $akun)
+                                                <option value="{{ $akun->id }}">{{ $akun->kode }} -
+                                                    {{ $akun->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                        <div class="form-text text-muted">Diperlukan untuk status DIBAYAR SEBAGIAN atau
+                                            LUNAS.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @endif
+
             @if ($pembelian->transaksiAkun->count() > 0)
                 <div class="separator separator-dashed my-5"></div>
 
@@ -231,6 +305,33 @@
             $(document).on('click', '.btn-delete', function() {
                 $('#deleteModal').modal('show');
             });
+
+            // Handle payment status change
+            $('select[name="status_pembayaran"]').change(function() {
+                const status = $(this).val();
+                if (status === 'BELUM') {
+                    $('select[name="akun_kas_id"]').prop('required', false);
+                } else {
+                    $('select[name="akun_kas_id"]').prop('required', true);
+                }
+            });
+
+            // Initialize form validation
+            $('form[action*="update-status"]').submit(function(e) {
+                const status = $('select[name="status_pembayaran"]').val();
+                const akunKasId = $('select[name="akun_kas_id"]').val();
+
+                if ((status === 'SEBAGIAN' || status === 'LUNAS') && !akunKasId) {
+                    e.preventDefault();
+                    alert('Pilih Akun Kas untuk status pembayaran ' + status);
+                    return false;
+                }
+
+                return true;
+            });
+
+            // Initial check
+            $('select[name="status_pembayaran"]').trigger('change');
         });
     </script>
 @endpush

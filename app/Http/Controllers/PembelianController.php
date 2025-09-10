@@ -72,6 +72,15 @@ class PembelianController extends Controller
 
                     return '<span class="badge ' . $class . '">' . $status . '</span>';
                 })
+                ->addColumn('status_pembayaran_formatted', function ($row) {
+                    if ($row->jenis !== 'HUTANG') {
+                        return $row->jenis === 'TUNAI' ?
+                            '<span class="badge badge-success">LUNAS</span>' :
+                            '<span class="badge badge-info">KONSINYASI</span>';
+                    }
+
+                    return $row->status_pembayaran_formatted;
+                })
                 ->addColumn('tanggal_faktur_formatted', function ($row) {
                     return $row->tanggal_faktur->format('d/m/Y');
                 })
@@ -87,7 +96,7 @@ class PembelianController extends Controller
                     $actionBtn .= '<button type="button" class="btn btn-sm btn-danger btn-delete" data-id="' . $row->id . '">Hapus</button>';
                     return $actionBtn;
                 })
-                ->rawColumns(['jenis_badge', 'status_jatuh_tempo', 'action'])
+                ->rawColumns(['jenis_badge', 'status_jatuh_tempo', 'status_pembayaran_formatted', 'action'])
                 ->make(true);
         }
 
@@ -662,5 +671,62 @@ class PembelianController extends Controller
     {
         $obat = Obat::with(['satuans.satuan'])->findOrFail($id);
         return response()->json($obat->satuans);
+    }
+
+    /**
+     * Update payment status for a purchase
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $pembelian = Pembelian::findOrFail($id);
+
+        // Validate request
+        $validated = $request->validate([
+            'status_pembayaran' => 'required|in:BELUM,SEBAGIAN,LUNAS',
+            'akun_kas_id' => 'required_if:status_pembayaran,SEBAGIAN,LUNAS|exists:akun,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Update the payment status
+            $oldStatus = $pembelian->status_pembayaran;
+            $newStatus = $validated['status_pembayaran'];
+
+            // Use the model method we just created
+            $success = $pembelian->updateStatusPembayaran($newStatus);
+
+            if (!$success) {
+                return redirect()->back()->with('error', 'Gagal memperbarui status pembayaran.');
+            }
+
+            // If updating to LUNAS or SEBAGIAN, create accounting transaction
+            if (($newStatus === 'LUNAS' || $newStatus === 'SEBAGIAN') && $request->has('akun_kas_id')) {
+                // Create transaction for the payment
+                TransaksiAkun::create([
+                    'akun_id' => $request->akun_kas_id,
+                    'tanggal' => now(),
+                    'kode_referensi' => 'PB-PAY-' . $pembelian->id,
+                    'tipe_referensi' => 'PEMBELIAN',
+                    'referensi_id' => $pembelian->id,
+                    'deskripsi' => 'Pembayaran hutang untuk faktur ' . $pembelian->no_faktur . ' (' .
+                        ($newStatus === 'LUNAS' ? 'LUNAS' : 'SEBAGIAN') . ')',
+                    'debit' => $pembelian->grand_total, // For debt payments, debit the account
+                    'kredit' => 0,
+                    'user_id' => Auth::id()
+                ]);
+            }
+
+            DB::commit();
+
+            // Show appropriate message
+            if ($oldStatus !== $newStatus) {
+                return redirect()->back()->with('success', 'Status pembayaran berhasil diperbarui menjadi ' . $newStatus);
+            }
+
+            return redirect()->back()->with('info', 'Tidak ada perubahan pada status pembayaran');
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 }

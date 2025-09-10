@@ -54,7 +54,7 @@ class DashboardController extends Controller
             })
             ->select(
                 DB::raw('SUM(penjualan_details.total) as total_sales'),
-                DB::raw('SUM(obat_satuan.harga_beli * penjualan_details.jumlah) as total_cost')
+                DB::raw('SUM(penjualan_details.harga_beli * penjualan_details.jumlah) as total_cost')
             )
             ->whereBetween('penjualans.tanggal_penjualan', [$firstDayOfMonth, $lastDayOfMonth])
             ->first();
@@ -77,7 +77,7 @@ class DashboardController extends Controller
             })
             ->select(
                 DB::raw('SUM(penjualan_details.total) as total_sales'),
-                DB::raw('SUM(obat_satuan.harga_beli * penjualan_details.jumlah) as total_cost')
+                DB::raw('SUM(penjualan_details.harga_beli * penjualan_details.jumlah) as total_cost')
             )
             ->whereBetween('penjualans.tanggal_penjualan', [$firstDayOfLastMonth, $lastDayOfLastMonth])
             ->first();
@@ -102,6 +102,55 @@ class DashboardController extends Controller
         $outOfStockProducts = Obat::whereDoesntHave('stok', function ($query) {
             $query->where('qty', '>', 0);
         })->count();
+
+        // Assets summary calculations
+
+        // Total assets (all inventory value)
+        $totalAssets = DB::table('stok')
+            ->select(DB::raw('SUM(harga_beli * qty) as total_value'))
+            ->where('qty', '>', 0)
+            ->first()->total_value ?? 0;
+
+        // Total assets from credit purchases (hutang)
+        $totalAssetsHutang = DB::table('pembelian')
+            ->join('pembelian_detail', 'pembelian.id', '=', 'pembelian_detail.pembelian_id')
+            ->join('stok', 'pembelian_detail.id', '=', 'stok.pembelian_detail_id')
+            ->where('pembelian.jenis', '=', 'HUTANG')
+            ->where('stok.qty', '>', 0)
+            ->select(DB::raw('SUM(stok.harga_beli * stok.qty) as total_hutang'))
+            ->first()->total_hutang ?? 0;
+
+        // Total assets from consignment purchases (konsinyasi)
+        $totalAssetsKonsinyasi = DB::table('pembelian')
+            ->join('pembelian_detail', 'pembelian.id', '=', 'pembelian_detail.pembelian_id')
+            ->join('stok', 'pembelian_detail.id', '=', 'stok.pembelian_detail_id')
+            ->where('pembelian.jenis', '=', 'KONSINYASI')
+            ->where('stok.qty', '>', 0)
+            ->select(DB::raw('SUM(stok.harga_beli * stok.qty) as total_konsinyasi'))
+            ->first()->total_konsinyasi ?? 0;
+
+        // Total assets from cash purchases (tunai)
+        $totalAssetsTunai = DB::table('pembelian')
+            ->join('pembelian_detail', 'pembelian.id', '=', 'pembelian_detail.pembelian_id')
+            ->join('stok', 'pembelian_detail.id', '=', 'stok.pembelian_detail_id')
+            ->where('pembelian.jenis', '=', 'TUNAI')
+            ->where('stok.qty', '>', 0)
+            ->select(DB::raw('SUM(stok.harga_beli * stok.qty) as total_tunai'))
+            ->first()->total_tunai ?? 0;
+
+        // Total value and quantity of expired medicine
+        $today = Carbon::today();
+        $expiredMedicineData = DB::table('stok')
+            ->select(
+                DB::raw('SUM(harga_beli * qty) as total_expired'),
+                DB::raw('SUM(qty) as total_expired_qty')
+            )
+            ->where('tanggal_expired', '<', $today)
+            ->where('qty', '>', 0)
+            ->first();
+
+        $totalAssetsExpired = $expiredMedicineData->total_expired ?? 0;
+        $totalExpiredQty = $expiredMedicineData->total_expired_qty ?? 0;
 
         // Sales by day of current month (for chart)
         $dailySalesData = Penjualan::select(
@@ -177,7 +226,13 @@ class DashboardController extends Controller
             'topProducts',
             'expenseChartData',
             'expensesByCategory',
-            'recentTransactions'
+            'recentTransactions',
+            'totalAssets',
+            'totalAssetsHutang',
+            'totalAssetsKonsinyasi',
+            'totalAssetsTunai',
+            'totalAssetsExpired',
+            'totalExpiredQty'
         ));
     }
 
@@ -231,7 +286,7 @@ class DashboardController extends Controller
             })
             ->select(
                 DB::raw('SUM(penjualan_details.total) as total_sales'),
-                DB::raw('SUM(obat_satuan.harga_beli * penjualan_details.jumlah) as total_cost')
+                DB::raw('SUM(penjualan_details.harga_beli * penjualan_details.jumlah) as total_cost')
             )
             ->whereBetween('penjualans.tanggal_penjualan', [$startDate, $endDate])
             ->first();

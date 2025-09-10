@@ -423,6 +423,166 @@
     <!--begin::Row-->
     <div class="row g-5 g-xl-8 mb-5 mb-xl-8">
         <!--begin::Col-->
+        <div class="col-12">
+            <div class="card card-flush">
+                <!--begin::Card header-->
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-dark">Assets Summary</span>
+                        <span class="text-gray-400 mt-1 fw-semibold fs-6">Ringkasan nilai aset inventori</span>
+                    </h3>
+                </div>
+                <!--end::Card header-->
+
+                <!--begin::Card body-->
+                <div class="card-body pt-0">
+                    <div class="row g-5 g-xl-8">
+                        <!-- Total Assets Card -->
+                        <div class="col-xl-4">
+                            <div class="card card-xl-stretch mb-xl-8 bg-light-primary">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-40px me-3">
+                                            <div class="symbol-label bg-primary">
+                                                <i class="ki-duotone ki-dollar text-inverse-primary fs-1">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fs-5 text-dark fw-bold">Total Assets</div>
+                                            <div class="fs-7 text-muted fw-semibold">Total nilai inventori saat ini</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column mt-7">
+                                        <span class="fs-2x fw-bold text-dark me-2 lh-1 ls-n2">Rp
+                                            {{ number_format($totalAssets, 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assets Hutang Card -->
+                        <div class="col-xl-4">
+                            <div class="card card-xl-stretch mb-xl-8 bg-light-warning">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-40px me-3">
+                                            <div class="symbol-label bg-warning">
+                                                <i class="ki-duotone ki-credit-cart text-inverse-warning fs-1">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fs-5 text-dark fw-bold">Assets Hutang</div>
+                                            <div class="fs-7 text-muted fw-semibold">Nilai inventori dari pembelian kredit
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column mt-7">
+                                        <span class="fs-2x fw-bold text-dark me-2 lh-1 ls-n2">Rp
+                                            {{ number_format($totalAssetsHutang, 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assets Konsinyasi Card -->
+                        <div class="col-xl-4">
+                            <div class="card card-xl-stretch mb-xl-8 bg-light-info">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-40px me-3">
+                                            <div class="symbol-label bg-info">
+                                                <i class="ki-duotone ki-handcart text-inverse-info fs-1">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fs-5 text-dark fw-bold">Assets Konsinyasi</div>
+                                            <div class="fs-7 text-muted fw-semibold">Nilai inventori konsinyasi</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column mt-7">
+                                        <span class="fs-2x fw-bold text-dark me-2 lh-1 ls-n2">Rp
+                                            {{ number_format($totalAssetsKonsinyasi, 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assets Tunai Card -->
+                        <div class="col-xl-6">
+                            <div class="card card-xl-stretch mb-xl-8 bg-light-success">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-40px me-3">
+                                            <div class="symbol-label bg-success">
+                                                <i class="ki-duotone ki-wallet text-inverse-success fs-1">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fs-5 text-dark fw-bold">Assets Tunai</div>
+                                            <div class="fs-7 text-muted fw-semibold">Nilai inventori dari pembelian tunai
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column mt-7">
+                                        <span class="fs-2x fw-bold text-dark me-2 lh-1 ls-n2">Rp
+                                            {{ number_format($totalAssetsTunai, 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assets Expired Card -->
+                        <div class="col-xl-6">
+                            <div class="card card-xl-stretch mb-xl-8 bg-light-danger">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-40px me-3">
+                                            <div class="symbol-label bg-danger">
+                                                <i class="ki-duotone ki-trash-square text-inverse-danger fs-1">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                </i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="fs-5 text-dark fw-bold">Obat Expired</div>
+                                            <div class="fs-7 text-muted fw-semibold">Nilai inventori obat kadaluarsa</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column mt-7">
+                                        <span class="fs-2x fw-bold text-dark me-2 lh-1 ls-n2">Rp
+                                            {{ number_format($totalAssetsExpired, 0, ',', '.') }}</span>
+                                        <span
+                                            class="fs-6 fw-semibold text-muted mt-1">{{ number_format($totalExpiredQty, 0, ',', '.') }}
+                                            item expired</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Card body-->
+            </div>
+        </div>
+        <!--end::Col-->
+    </div>
+    <!--end::Row-->
+
+    <!--begin::Row-->
+    <div class="row g-5 g-xl-8 mb-5 mb-xl-8">
+        <!--begin::Col-->
         <div class="col-xl-4">
             <!--begin::Info Card-->
             <a href="{{ route('obat.index') }}" class="card bg-primary hoverable h-100 mb-5 mb-xl-8">

@@ -24,7 +24,8 @@
                         <th>Supplier</th>
                         <th>Jenis</th>
                         <th>Grand Total</th>
-                        <th>Status</th>
+                        <th>Status Jatuh Tempo</th>
+                        <th>Status Pembayaran</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -96,6 +97,12 @@
                         data: 'status_jatuh_tempo',
                         name: 'tanggal_jatuh_tempo',
                         orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'status_pembayaran_formatted',
+                        name: 'status_pembayaran',
+                        orderable: true,
                         searchable: false
                     },
                     {
