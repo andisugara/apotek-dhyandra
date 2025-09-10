@@ -20,7 +20,7 @@ services:
         container_name: dhyandra-apotek-nginx
         restart: unless-stopped
         ports:
-            - 8090:80
+            - 8091:80
         volumes:
             - ./:/var/www
             - ./docker/nginx:/etc/nginx/conf.d/
@@ -32,7 +32,7 @@ services:
         restart: unless-stopped
         tty: true
         ports:
-            - 3308:3306
+            - 3309:3306
         volumes:
             - ./mysql:/var/lib/mysql
         environment:
