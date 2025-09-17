@@ -4,24 +4,87 @@ namespace App\Http\Controllers;
 
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
+use App\Models\Obat;
+use App\Models\SatuanObat;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
 
 class LaporanPenjualanController extends Controller
 {
     /**
-     * Display the sales report page.
+     * Display the sales report page with date filter.
      *
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
         // Default: show current month
-        $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
-        $endDate = Carbon::now()->format('Y-m-d');
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
 
-        return view('laporan.penjualan.index', compact('startDate', 'endDate'));
+        if ($request->ajax()) {
+            // Get detailed sales data with profit calculation
+            $query = PenjualanDetail::with(['obat', 'satuan', 'penjualan'])
+                ->join('penjualans', 'penjualans.id', '=', 'penjualan_details.penjualan_id')
+                ->join('obat', 'obat.id', '=', 'penjualan_details.obat_id')
+                ->leftJoin('satuan_obat', 'satuan_obat.id', '=', 'penjualan_details.satuan_id')
+                ->select(
+                    'penjualan_details.id',
+                    'penjualans.no_faktur',
+                    'penjualans.tanggal_penjualan',
+                    'obat.nama_obat',
+                    'satuan_obat.nama as satuan',
+                    'penjualan_details.harga_beli',
+                    'penjualan_details.harga',
+                    'penjualan_details.jumlah',
+                    'penjualan_details.diskon',
+                    'penjualan_details.ppn',
+                    'penjualan_details.total',
+                    DB::raw('((penjualan_details.harga * penjualan_details.jumlah) - penjualan_details.diskon + penjualan_details.ppn - (penjualan_details.harga_beli * penjualan_details.jumlah)) as keuntungan')
+                )
+                ->whereBetween('penjualans.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59']);
+
+            return DataTables::of($query)
+                ->addIndexColumn()
+                ->addColumn('tanggal_formatted', function ($row) {
+                    return Carbon::parse($row->tanggal_penjualan)->format('d/m/Y H:i');
+                })
+                ->addColumn('harga_beli_formatted', function ($row) {
+                    return 'Rp ' . number_format($row->harga_beli, 0, ',', '.');
+                })
+                ->addColumn('harga_jual_formatted', function ($row) {
+                    return 'Rp ' . number_format($row->harga, 0, ',', '.');
+                })
+                ->addColumn('diskon_formatted', function ($row) {
+                    return 'Rp ' . number_format($row->diskon, 0, ',', '.');
+                })
+                ->addColumn('ppn_formatted', function ($row) {
+                    return 'Rp ' . number_format($row->ppn, 0, ',', '.');
+                })
+                ->addColumn('total_formatted', function ($row) {
+                    return 'Rp ' . number_format($row->total, 0, ',', '.');
+                })
+                ->addColumn('keuntungan_formatted', function ($row) {
+                    $class = $row->keuntungan >= 0 ? 'text-success' : 'text-danger';
+                    return '<span class="' . $class . '">Rp ' . number_format($row->keuntungan, 0, ',', '.') . '</span>';
+                })
+                ->rawColumns(['keuntungan_formatted'])
+                ->make(true);
+        }
+
+        // Get summary data for the selected period
+        $summary = PenjualanDetail::join('penjualans', 'penjualans.id', '=', 'penjualan_details.penjualan_id')
+            ->select(
+                DB::raw('SUM(penjualan_details.total) as total_penjualan'),
+                DB::raw('SUM(penjualan_details.harga_beli * penjualan_details.jumlah) as total_hpp'),
+                DB::raw('SUM((penjualan_details.harga * penjualan_details.jumlah) - penjualan_details.diskon + penjualan_details.ppn - (penjualan_details.harga_beli * penjualan_details.jumlah)) as total_keuntungan')
+            )
+            ->whereBetween('penjualans.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
+            ->first();
+
+        return view('laporan.penjualan.index', compact('startDate', 'endDate', 'summary'));
     }
 
     /**
@@ -40,88 +103,45 @@ class LaporanPenjualanController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        // Get sales summary
-        $salesSummary = Penjualan::select(
-            DB::raw('COUNT(*) as total_transactions'),
-            DB::raw('SUM(grand_total) as total_revenue'),
-            DB::raw('AVG(grand_total) as average_transaction')
-        )
-            ->whereBetween('tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
-            ->first();
-
         // Get detailed sales data with profit calculation
-        $salesDetails = PenjualanDetail::join('penjualan', 'penjualan.id', '=', 'penjualan_detail.penjualan_id')
-            ->join('obat', 'obat.id', '=', 'penjualan_detail.obat_id')
-            ->join('obat_satuan', function ($join) {
-                $join->on('obat.id', '=', 'obat_satuan.obat_id')
-                    ->on('penjualan_detail.satuan_id', '=', 'obat_satuan.satuan_id');
-            })
+        $salesData = PenjualanDetail::join('penjualans', 'penjualans.id', '=', 'penjualan_details.penjualan_id')
+            ->join('obat', 'obat.id', '=', 'penjualan_details.obat_id')
+            ->leftJoin('satuan_obat', 'satuan_obat.id', '=', 'penjualan_details.satuan_id')
             ->select(
-                'penjualan.no_faktur',
-                'penjualan.tanggal_penjualan',
+                'penjualans.no_faktur',
+                'penjualans.tanggal_penjualan',
                 'obat.nama_obat',
-                'penjualan_detail.harga',
-                'obat_satuan.harga_beli',
-                'penjualan_detail.jumlah',
-                'penjualan_detail.diskon',
-                'penjualan_detail.ppn',
-                'penjualan_detail.total',
-                DB::raw('(penjualan_detail.harga - obat_satuan.harga_beli) * penjualan_detail.jumlah as profit_raw'),
-                DB::raw('((penjualan_detail.harga * penjualan_detail.jumlah) - (penjualan_detail.diskon) + (penjualan_detail.ppn) - (obat_satuan.harga_beli * penjualan_detail.jumlah)) as profit')
+                'satuan_obat.nama as satuan',
+                'penjualan_details.harga_beli',
+                'penjualan_details.harga',
+                'penjualan_details.jumlah',
+                'penjualan_details.diskon',
+                'penjualan_details.ppn',
+                'penjualan_details.total',
+                DB::raw('((penjualan_details.harga * penjualan_details.jumlah) - penjualan_details.diskon + penjualan_details.ppn - (penjualan_details.harga_beli * penjualan_details.jumlah)) as keuntungan')
             )
-            ->whereBetween('penjualan.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
-            ->orderBy('penjualan.tanggal_penjualan', 'desc')
+            ->whereBetween('penjualans.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
+            ->orderBy('penjualans.tanggal_penjualan', 'desc')
             ->get();
 
-        // Calculate total sales, cost and profit
-        $totalSales = $salesDetails->sum('total');
-        $totalCost = $salesDetails->sum(function ($item) {
+        // Calculate summary
+        $totalPenjualan = $salesData->sum('total');
+        $totalHPP = $salesData->sum(function ($item) {
             return $item->harga_beli * $item->jumlah;
         });
-        $totalProfit = $salesDetails->sum('profit');
+        $totalKeuntungan = $salesData->sum('keuntungan');
 
-        // Daily sales chart data
-        $dailySales = Penjualan::select(
-            DB::raw('DATE(tanggal_penjualan) as date'),
-            DB::raw('SUM(grand_total) as total_sales')
-        )
-            ->whereBetween('tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        $chartData = [
-            'labels' => $dailySales->pluck('date')->map(function ($date) {
-                return Carbon::parse($date)->format('d M');
-            })->toArray(),
-            'data' => $dailySales->pluck('total_sales')->toArray()
+        $summary = [
+            'total_penjualan' => $totalPenjualan,
+            'total_hpp' => $totalHPP,
+            'total_keuntungan' => $totalKeuntungan,
         ];
-
-        // Group by product
-        $productSales = PenjualanDetail::join('penjualan', 'penjualan.id', '=', 'penjualan_detail.penjualan_id')
-            ->join('obat', 'obat.id', '=', 'penjualan_detail.obat_id')
-            ->select(
-                'obat.id',
-                'obat.nama_obat',
-                DB::raw('SUM(penjualan_detail.jumlah) as total_qty'),
-                DB::raw('SUM(penjualan_detail.total) as total_sales')
-            )
-            ->whereBetween('penjualan.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
-            ->groupBy('obat.id', 'obat.nama_obat')
-            ->orderByDesc('total_sales')
-            ->limit(10)
-            ->get();
 
         return view('laporan.penjualan.index', compact(
             'startDate',
             'endDate',
-            'salesSummary',
-            'salesDetails',
-            'totalSales',
-            'totalCost',
-            'totalProfit',
-            'chartData',
-            'productSales'
+            'salesData',
+            'summary'
         ));
     }
 
@@ -137,43 +157,45 @@ class LaporanPenjualanController extends Controller
         $endDate = $request->input('end_date');
 
         // Get detailed sales data with profit calculation
-        $salesDetails = PenjualanDetail::join('penjualan', 'penjualan.id', '=', 'penjualan_detail.penjualan_id')
-            ->join('obat', 'obat.id', '=', 'penjualan_detail.obat_id')
-            ->join('obat_satuan', function ($join) {
-                $join->on('obat.id', '=', 'obat_satuan.obat_id')
-                    ->on('penjualan_detail.satuan_id', '=', 'obat_satuan.satuan_id');
-            })
+        $salesData = PenjualanDetail::join('penjualans', 'penjualans.id', '=', 'penjualan_details.penjualan_id')
+            ->join('obat', 'obat.id', '=', 'penjualan_details.obat_id')
+            ->leftJoin('satuan_obat', 'satuan_obat.id', '=', 'penjualan_details.satuan_id')
             ->select(
-                'penjualan.no_faktur',
-                'penjualan.tanggal_penjualan',
+                'penjualans.no_faktur',
+                'penjualans.tanggal_penjualan',
                 'obat.nama_obat',
-                'penjualan_detail.harga',
-                'obat_satuan.harga_beli',
-                'penjualan_detail.jumlah',
-                'penjualan_detail.diskon',
-                'penjualan_detail.ppn',
-                'penjualan_detail.total',
-                DB::raw('((penjualan_detail.harga * penjualan_detail.jumlah) - (penjualan_detail.diskon) + (penjualan_detail.ppn) - (obat_satuan.harga_beli * penjualan_detail.jumlah)) as profit')
+                'satuan_obat.nama as satuan',
+                'penjualan_details.harga_beli',
+                'penjualan_details.harga',
+                'penjualan_details.jumlah',
+                'penjualan_details.diskon',
+                'penjualan_details.ppn',
+                'penjualan_details.total',
+                DB::raw('((penjualan_details.harga * penjualan_details.jumlah) - penjualan_details.diskon + penjualan_details.ppn - (penjualan_details.harga_beli * penjualan_details.jumlah)) as keuntungan')
             )
-            ->whereBetween('penjualan.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
-            ->orderBy('penjualan.tanggal_penjualan', 'desc')
+            ->whereBetween('penjualans.tanggal_penjualan', [$startDate, $endDate . ' 23:59:59'])
+            ->orderBy('penjualans.tanggal_penjualan', 'desc')
             ->get();
 
-        // Calculate total sales, cost and profit
-        $totalSales = $salesDetails->sum('total');
-        $totalCost = $salesDetails->sum(function ($item) {
+        // Calculate summary
+        $totalPenjualan = $salesData->sum('total');
+        $totalHPP = $salesData->sum(function ($item) {
             return $item->harga_beli * $item->jumlah;
         });
-        $totalProfit = $salesDetails->sum('profit');
+        $totalKeuntungan = $salesData->sum('keuntungan');
+
+        $summary = [
+            'total_penjualan' => $totalPenjualan,
+            'total_hpp' => $totalHPP,
+            'total_keuntungan' => $totalKeuntungan,
+        ];
 
         $pdf = app('dompdf.wrapper');
         $pdf->loadView('laporan.penjualan.pdf', compact(
             'startDate',
             'endDate',
-            'salesDetails',
-            'totalSales',
-            'totalCost',
-            'totalProfit'
+            'salesData',
+            'summary'
         ));
 
         return $pdf->download('laporan-penjualan-' . $startDate . '-' . $endDate . '.pdf');

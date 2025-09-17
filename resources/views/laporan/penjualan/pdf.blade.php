@@ -62,15 +62,19 @@
                 text-align: right;
             }
 
+            .text-center {
+                text-align: center;
+            }
+
             .total-row {
                 font-weight: bold;
             }
 
-            .profit-positive {
+            .text-success {
                 color: #28a745;
             }
 
-            .profit-negative {
+            .text-danger {
                 color: #dc3545;
             }
 
@@ -102,9 +106,11 @@
         <table>
             <thead>
                 <tr>
+                    <th>No</th>
                     <th>No. Faktur</th>
                     <th>Tanggal</th>
                     <th>Produk</th>
+                    <th>Satuan</th>
                     <th class="text-end">Harga Beli</th>
                     <th class="text-end">Harga Jual</th>
                     <th class="text-end">Jumlah</th>
@@ -115,24 +121,26 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($salesDetails as $detail)
+                @forelse($salesData as $index => $item)
                     <tr>
-                        <td>{{ $detail->no_faktur }}</td>
-                        <td>{{ \Carbon\Carbon::parse($detail->tanggal_penjualan)->format('d/m/Y H:i') }}</td>
-                        <td>{{ $detail->nama_obat }}</td>
-                        <td class="text-end">{{ number_format($detail->harga_beli, 0, ',', '.') }}</td>
-                        <td class="text-end">{{ number_format($detail->harga, 0, ',', '.') }}</td>
-                        <td class="text-end">{{ $detail->jumlah }}</td>
-                        <td class="text-end">{{ number_format($detail->diskon, 0, ',', '.') }}</td>
-                        <td class="text-end">{{ number_format($detail->ppn, 0, ',', '.') }}</td>
-                        <td class="text-end">{{ number_format($detail->total, 0, ',', '.') }}</td>
-                        <td class="text-end {{ $detail->profit > 0 ? 'profit-positive' : 'profit-negative' }}">
-                            {{ number_format($detail->profit, 0, ',', '.') }}
+                        <td class="text-center">{{ $index + 1 }}</td>
+                        <td>{{ $item->no_faktur }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->tanggal_penjualan)->format('d/m/Y H:i') }}</td>
+                        <td>{{ $item->nama_obat }}</td>
+                        <td>{{ $item->satuan }}</td>
+                        <td class="text-end">{{ number_format($item->harga_beli, 0, ',', '.') }}</td>
+                        <td class="text-end">{{ number_format($item->harga, 0, ',', '.') }}</td>
+                        <td class="text-end">{{ $item->jumlah }}</td>
+                        <td class="text-end">{{ number_format($item->diskon, 0, ',', '.') }}</td>
+                        <td class="text-end">{{ number_format($item->ppn, 0, ',', '.') }}</td>
+                        <td class="text-end">{{ number_format($item->total, 0, ',', '.') }}</td>
+                        <td class="text-end {{ $item->keuntungan >= 0 ? 'text-success' : 'text-danger' }}">
+                            {{ number_format($item->keuntungan, 0, ',', '.') }}
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10" class="text-center">Tidak ada data</td>
+                        <td colspan="12" class="text-center">Tidak ada data</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -142,20 +150,23 @@
             <table>
                 <tr>
                     <td>Total Penjualan</td>
-                    <td class="text-end">Rp {{ number_format($totalSales, 0, ',', '.') }}</td>
+                    <td class="text-end">Rp {{ number_format($summary['total_penjualan'], 0, ',', '.') }}</td>
                 </tr>
                 <tr>
                     <td>Harga Pokok Penjualan (HPP)</td>
-                    <td class="text-end">Rp {{ number_format($totalCost, 0, ',', '.') }}</td>
+                    <td class="text-end">Rp {{ number_format($summary['total_hpp'], 0, ',', '.') }}</td>
                 </tr>
                 <tr>
-                    <td>Keuntungan Kotor</td>
-                    <td class="text-end">Rp {{ number_format($totalProfit, 0, ',', '.') }}</td>
+                    <td>Total Keuntungan</td>
+                    <td class="text-end {{ $summary['total_keuntungan'] >= 0 ? 'text-success' : 'text-danger' }}">
+                        Rp {{ number_format($summary['total_keuntungan'], 0, ',', '.') }}
+                    </td>
                 </tr>
                 <tr>
                     <td>Margin Keuntungan</td>
-                    <td class="text-end">
-                        {{ $totalSales > 0 ? number_format(($totalProfit / $totalSales) * 100, 2) : 0 }}%</td>
+                    <td class="text-end {{ $summary['total_keuntungan'] >= 0 ? 'text-success' : 'text-danger' }}">
+                        {{ $summary['total_penjualan'] > 0 ? number_format(($summary['total_keuntungan'] / $summary['total_penjualan']) * 100, 2) : 0 }}%
+                    </td>
                 </tr>
             </table>
             <div style="clear: both;"></div>

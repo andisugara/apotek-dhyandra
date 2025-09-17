@@ -4,12 +4,23 @@
 @section('styles')
     <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
     <style>
-        .profit-positive {
-            color: #50CD89;
+        .text-success {
+            color: #50CD89 !important;
         }
 
-        .profit-negative {
-            color: #F1416C;
+        .text-danger {
+            color: #F1416C !important;
+        }
+
+        .summary-card {
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.075);
+            transition: all 0.3s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 3rem 1rem rgba(0, 0, 0, 0.1);
         }
     </style>
 @endsection
@@ -29,20 +40,21 @@
 
         <!--begin::Card body-->
         <div class="card-body py-4">
-            <form action="{{ route('laporan.penjualan.index') }}" method="GET" id="report-form">
-                <div class="row mb-8">
+            <!--begin::Filter form-->
+            <form action="{{ route('laporan.penjualan.index') }}" method="GET" id="filter-form" class="mb-8">
+                <div class="row mb-5">
                     <div class="col-md-4">
-                        <label class="required form-label">Tanggal Awal</label>
-                        <input type="date" class="form-control form-control-solid" name="start_date"
-                            value="{{ $startDate }}" required />
+                        <div class="form-group">
+                            <label class="form-label">Tanggal Awal</label>
+                            <input type="date" class="form-control" name="start_date" value="{{ $startDate }}" />
+                        </div>
                     </div>
-
                     <div class="col-md-4">
-                        <label class="required form-label">Tanggal Akhir</label>
-                        <input type="date" class="form-control form-control-solid" name="end_date"
-                            value="{{ $endDate }}" required />
+                        <div class="form-group">
+                            <label class="form-label">Tanggal Akhir</label>
+                            <input type="date" class="form-control" name="end_date" value="{{ $endDate }}" />
+                        </div>
                     </div>
-
                     <div class="col-md-4 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-3">
                             <i class="ki-duotone ki-filter fs-2">
@@ -52,214 +64,120 @@
                             Filter
                         </button>
 
-                        @if (isset($salesDetails) && $salesDetails->count() > 0)
-                            <a href="{{ route('laporan.penjualan.pdf', ['startDate' => $startDate, 'endDate' => $endDate]) }}"
-                                class="btn btn-danger" target="_blank">
-                                <i class="ki-duotone ki-file-down fs-2">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                </i>
-                                Export PDF
-                            </a>
-                        @endif
+                        <a href="{{ route('laporan.penjualan.pdf', ['start_date' => $startDate, 'end_date' => $endDate]) }}"
+                            class="btn btn-danger" target="_blank">
+                            <i class="ki-duotone ki-file-down fs-2">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                            </i>
+                            Export PDF
+                        </a>
                     </div>
                 </div>
             </form>
+            <!--end::Filter form-->
 
-            @if (isset($salesSummary))
-                <div class="row g-5 g-xl-8 mb-5 mb-xl-8">
+            <!--begin::Summary cards-->
+            @if (isset($summary))
+                <div class="row g-5 g-xl-8 mb-8">
                     <div class="col-xl-4">
-                        <div class="card bg-light-primary hoverable h-100 mb-5 mb-xl-8">
+                        <div class="card bg-light-primary summary-card h-100">
                             <div class="card-body">
-                                <div class="d-flex flex-center h-80px w-80px mb-5 mx-auto">
-                                    <i class="ki-duotone ki-tag-user text-primary fs-3x">
-                                        <span class="path1"></span>
-                                        <span class="path2"></span>
-                                    </i>
-                                </div>
-                                <div class="text-center">
-                                    <h1 class="fw-bold">{{ number_format($salesSummary->total_transactions, 0, ',', '.') }}
-                                    </h1>
-                                    <div class="fs-3 fw-semibold">Total Transaksi</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-xl-4">
-                        <div class="card bg-light-success hoverable h-100 mb-5 mb-xl-8">
-                            <div class="card-body">
-                                <div class="d-flex flex-center h-80px w-80px mb-5 mx-auto">
-                                    <i class="ki-duotone ki-dollar text-success fs-3x">
-                                        <span class="path1"></span>
-                                        <span class="path2"></span>
-                                    </i>
-                                </div>
-                                <div class="text-center">
-                                    <h1 class="fw-bold">Rp {{ number_format($salesSummary->total_revenue, 0, ',', '.') }}
-                                    </h1>
-                                    <div class="fs-3 fw-semibold">Total Pendapatan</div>
+                                <div class="d-flex flex-column h-100">
+                                    <div class="d-flex justify-content-between mb-7">
+                                        <div class="me-2">
+                                            <span class="text-dark fw-bold fs-3 d-block mb-1">Total Penjualan</span>
+                                            <span class="text-muted fw-semibold fs-6">Nilai total penjualan pada
+                                                periode</span>
+                                        </div>
+                                        <span class="fw-bold text-primary fs-3x">Rp
+                                            {{ number_format($summary->total_penjualan ?? 0, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="d-flex flex-center h-80px w-80px mb-5">
+                                        <i class="ki-duotone ki-dollar text-primary fs-3x">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-xl-4">
-                        <div class="card bg-light-warning hoverable h-100 mb-5 mb-xl-8">
+                        <div class="card bg-light-warning summary-card h-100">
                             <div class="card-body">
-                                <div class="d-flex flex-center h-80px w-80px mb-5 mx-auto">
-                                    <i class="ki-duotone ki-chart-line-star text-warning fs-3x">
-                                        <span class="path1"></span>
-                                        <span class="path2"></span>
-                                    </i>
+                                <div class="d-flex flex-column h-100">
+                                    <div class="d-flex justify-content-between mb-7">
+                                        <div class="me-2">
+                                            <span class="text-dark fw-bold fs-3 d-block mb-1">Total HPP</span>
+                                            <span class="text-muted fw-semibold fs-6">Nilai harga pokok penjualan</span>
+                                        </div>
+                                        <span class="fw-bold text-warning fs-3x">Rp
+                                            {{ number_format($summary->total_hpp ?? 0, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="d-flex flex-center h-80px w-80px mb-5">
+                                        <i class="ki-duotone ki-tag text-warning fs-3x">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                    </div>
                                 </div>
-                                <div class="text-center">
-                                    <h1 class="fw-bold">Rp {{ number_format($totalProfit, 0, ',', '.') }}</h1>
-                                    <div class="fs-3 fw-semibold">Total Keuntungan</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-5 g-xl-8 mb-5 mb-xl-8">
-                    <div class="col-xl-8">
-                        <div class="card card-xl-stretch mb-xl-8">
-                            <div class="card-header border-0 pt-5">
-                                <h3 class="card-title align-items-start flex-column">
-                                    <span class="card-label fw-bold fs-3 mb-1">Grafik Penjualan</span>
-                                    <span class="text-muted fw-semibold fs-7">Penjualan harian dalam periode terpilih</span>
-                                </h3>
-                            </div>
-                            <div class="card-body">
-                                <div id="sales_chart" style="height: 350px"></div>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-xl-4">
-                        <div class="card card-xl-stretch mb-xl-8">
-                            <div class="card-header border-0 pt-5">
-                                <h3 class="card-title align-items-start flex-column">
-                                    <span class="card-label fw-bold fs-3 mb-1">Produk Terlaris</span>
-                                    <span class="text-muted fw-semibold fs-7">Dalam periode terpilih</span>
-                                </h3>
-                            </div>
-                            <div class="card-body py-3">
-                                <div class="table-responsive">
-                                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
-                                        <thead>
-                                            <tr class="fw-bold text-muted">
-                                                <th class="min-w-150px">Produk</th>
-                                                <th class="min-w-100px">Terjual</th>
-                                                <th class="min-w-100px text-end">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @forelse($productSales as $product)
-                                                <tr>
-                                                    <td>
-                                                        <span
-                                                            class="text-gray-800 fw-bold text-hover-primary fs-6">{{ $product->nama_obat }}</span>
-                                                    </td>
-                                                    <td>
-                                                        <span
-                                                            class="text-gray-600 fw-semibold d-block fs-7">{{ $product->total_qty }}</span>
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <span class="text-gray-800 fw-bold d-block fs-6">Rp
-                                                            {{ number_format($product->total_sales, 0, ',', '.') }}</span>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="3" class="text-center">Tidak ada data</td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
+                        <div class="card bg-light-success summary-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex flex-column h-100">
+                                    <div class="d-flex justify-content-between mb-7">
+                                        <div class="me-2">
+                                            <span class="text-dark fw-bold fs-3 d-block mb-1">Total Keuntungan</span>
+                                            <span class="text-muted fw-semibold fs-6">Keuntungan dari penjualan</span>
+                                        </div>
+                                        <span class="fw-bold text-success fs-3x">Rp
+                                            {{ number_format($summary->total_keuntungan ?? 0, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="d-flex flex-center h-80px w-80px mb-5">
+                                        <i class="ki-duotone ki-chart-line-star text-success fs-3x">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                        </i>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-8">
-                    <div class="card-header border-0 pt-6">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold fs-3 mb-1">Detail Transaksi</span>
-                        </h3>
-                    </div>
-                    <div class="card-body py-3">
-                        <div class="table-responsive">
-                            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4"
-                                id="sales_table">
-                                <thead>
-                                    <tr class="fw-bold text-muted">
-                                        <th>No. Faktur</th>
-                                        <th>Tanggal</th>
-                                        <th>Produk</th>
-                                        <th class="text-end">Harga Beli</th>
-                                        <th class="text-end">Harga Jual</th>
-                                        <th class="text-end">Jumlah</th>
-                                        <th class="text-end">Diskon</th>
-                                        <th class="text-end">PPN</th>
-                                        <th class="text-end">Total</th>
-                                        <th class="text-end">Keuntungan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($salesDetails as $detail)
-                                        <tr>
-                                            <td>{{ $detail->no_faktur }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($detail->tanggal_penjualan)->format('d/m/Y H:i') }}
-                                            </td>
-                                            <td>{{ $detail->nama_obat }}</td>
-                                            <td class="text-end">Rp {{ number_format($detail->harga_beli, 0, ',', '.') }}
-                                            </td>
-                                            <td class="text-end">Rp {{ number_format($detail->harga, 0, ',', '.') }}</td>
-                                            <td class="text-end">{{ $detail->jumlah }}</td>
-                                            <td class="text-end">Rp {{ number_format($detail->diskon, 0, ',', '.') }}</td>
-                                            <td class="text-end">Rp {{ number_format($detail->ppn, 0, ',', '.') }}</td>
-                                            <td class="text-end">Rp {{ number_format($detail->total, 0, ',', '.') }}</td>
-                                            <td
-                                                class="text-end {{ $detail->profit > 0 ? 'profit-positive' : 'profit-negative' }}">
-                                                Rp {{ number_format($detail->profit, 0, ',', '.') }}
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="10" class="text-center">Tidak ada data</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                                <tfoot>
-                                    <tr class="fw-bold">
-                                        <td colspan="8" class="text-end">Total</td>
-                                        <td class="text-end">Rp {{ number_format($totalSales, 0, ',', '.') }}</td>
-                                        <td
-                                            class="text-end {{ $totalProfit > 0 ? 'profit-positive' : 'profit-negative' }}">
-                                            Rp {{ number_format($totalProfit, 0, ',', '.') }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="8" class="text-end">Harga Pokok Penjualan (HPP)</td>
-                                        <td class="text-end" colspan="2">Rp
-                                            {{ number_format($totalCost, 0, ',', '.') }}</td>
-                                    </tr>
-                                    <tr class="fw-bold">
-                                        <td colspan="8" class="text-end">Margin Keuntungan</td>
-                                        <td class="text-end {{ $totalProfit > 0 ? 'profit-positive' : 'profit-negative' }}"
-                                            colspan="2">
-                                            {{ $totalSales > 0 ? number_format(($totalProfit / $totalSales) * 100, 2) : 0 }}%
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
                         </div>
                     </div>
                 </div>
             @endif
+            <!--end::Summary cards-->
+
+            <!--begin::Table container-->
+            <div class="table-responsive">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4" id="penjualan_table">
+                    <thead>
+                        <tr class="fw-bold text-muted bg-light">
+                            <th>No</th>
+                            <th>No. Faktur</th>
+                            <th>Tanggal</th>
+                            <th>Nama Obat</th>
+                            <th>Satuan</th>
+                            <th>Harga Beli</th>
+                            <th>Harga Jual</th>
+                            <th>Jumlah</th>
+                            <th>Diskon</th>
+                            <th>PPN</th>
+                            <th>Total</th>
+                            <th>Keuntungan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data akan diisi oleh DataTables -->
+                    </tbody>
+                </table>
+            </div>
+            <!--end::Table container-->
         </div>
         <!--end::Card body-->
     </div>
@@ -268,122 +186,132 @@
 
 @push('scripts')
     <script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    @if (isset($chartData))
-        <script>
-            $(document).ready(function() {
-                // Initialize datatable
-                $('#sales_table').DataTable({
-                    order: [
-                        [1, 'desc']
-                    ],
-                    pageLength: 25,
-                    responsive: true
-                });
-
-                // Initialize sales chart
-                var salesChartOptions = {
-                    series: [{
-                        name: 'Penjualan',
-                        data: @json($chartData['data'])
-                    }],
-                    chart: {
-                        type: 'area',
-                        height: 350,
-                        toolbar: {
-                            show: false
-                        },
-                        zoom: {
-                            enabled: false
-                        }
-                    },
-                    colors: ['#3E97FF'],
-                    dataLabels: {
-                        enabled: false
-                    },
-                    stroke: {
-                        curve: 'smooth',
-                        width: 3
-                    },
-                    xaxis: {
-                        categories: @json($chartData['labels']),
-                        axisBorder: {
-                            show: false,
-                        },
-                        axisTicks: {
-                            show: false
-                        },
-                        labels: {
-                            style: {
-                                fontSize: '12px'
-                            }
-                        }
-                    },
-                    yaxis: {
-                        labels: {
-                            formatter: function(value) {
-                                return 'Rp ' + formatNumber(value);
-                            },
-                            style: {
-                                fontSize: '12px'
-                            }
-                        }
-                    },
-                    legend: {
-                        show: false
-                    },
-                    fill: {
-                        opacity: 0.3,
-                        type: 'gradient',
-                        gradient: {
-                            shade: 'light',
-                            type: "vertical",
-                            shadeIntensity: 0.5,
-                            opacityFrom: 0.7,
-                            opacityTo: 0.2,
-                            stops: [0, 100]
-                        }
-                    },
-                    grid: {
-                        borderColor: '#f1f1f1',
-                        strokeDashArray: 4,
-                        yaxis: {
-                            lines: {
-                                show: true
-                            }
-                        }
-                    },
-                    markers: {
-                        size: 4,
-                        colors: ['#3E97FF'],
-                        strokeColors: '#FFFFFF',
-                        strokeWidth: 2,
-                        hover: {
-                            size: 7
-                        }
-                    },
-                    tooltip: {
-                        y: {
-                            formatter: function(value) {
-                                return 'Rp ' + formatNumber(value);
-                            }
-                        }
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#penjualan_table').DataTable({
+                processing: true,
+                serverSide: true,
+                pageLength: 100, // Menampilkan 100 data per halaman
+                ajax: {
+                    url: "{{ route('laporan.penjualan.index') }}",
+                    data: function(d) {
+                        d.start_date = $('input[name="start_date"]').val();
+                        d.end_date = $('input[name="end_date"]').val();
                     }
-                };
-
-                try {
-                    if (document.getElementById('sales_chart')) {
-                        var salesChart = new ApexCharts(document.getElementById('sales_chart'), salesChartOptions);
-                        salesChart.render();
+                },
+                columns: [{
+                        data: 'DT_RowIndex',
+                        name: 'DT_RowIndex',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'no_faktur',
+                        name: 'penjualans.no_faktur'
+                    },
+                    {
+                        data: 'tanggal_formatted',
+                        name: 'penjualans.tanggal_penjualan'
+                    },
+                    {
+                        data: 'nama_obat',
+                        name: 'obat.nama_obat'
+                    },
+                    {
+                        data: 'satuan',
+                        name: 'satuan'
+                    },
+                    {
+                        data: 'harga_beli_formatted',
+                        name: 'penjualan_details.harga_beli',
+                        searchable: false
+                    },
+                    {
+                        data: 'harga_jual_formatted',
+                        name: 'penjualan_details.harga',
+                        searchable: false
+                    },
+                    {
+                        data: 'jumlah',
+                        name: 'penjualan_details.jumlah'
+                    },
+                    {
+                        data: 'diskon_formatted',
+                        name: 'penjualan_details.diskon',
+                        searchable: false
+                    },
+                    {
+                        data: 'ppn_formatted',
+                        name: 'penjualan_details.ppn',
+                        searchable: false
+                    },
+                    {
+                        data: 'total_formatted',
+                        name: 'penjualan_details.total',
+                        searchable: false
+                    },
+                    {
+                        data: 'keuntungan_formatted',
+                        name: 'keuntungan',
+                        searchable: false
                     }
-                } catch (error) {
-                    console.error("Error rendering sales chart:", error);
-                }
-
-                function formatNumber(number) {
-                    return new Intl.NumberFormat('id-ID').format(number);
+                ],
+                order: [
+                    [2, 'desc']
+                ], // Default sort by tanggal
+                dom: 'Bfrtip',
+                buttons: [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
+                language: {
+                    zeroRecords: "Tidak ada data yang ditemukan",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                    infoEmpty: "Menampilkan 0 sampai 0 dari 0 entri",
+                    infoFiltered: "(disaring dari _MAX_ total entri)",
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ entri",
+                    paginate: {
+                        first: "Pertama",
+                        last: "Terakhir",
+                        next: "Selanjutnya",
+                        previous: "Sebelumnya"
+                    }
                 }
             });
-        </script>
-    @endif
+
+            // Filter form submit handler
+            $('#filter-form').on('submit', function(e) {
+                e.preventDefault();
+                table.ajax.reload();
+
+                // Refresh summary data
+                $.ajax({
+                    url: "{{ route('laporan.penjualan.index') }}",
+                    data: {
+                        start_date: $('input[name="start_date"]').val(),
+                        end_date: $('input[name="end_date"]').val(),
+                        _token: "{{ csrf_token() }}",
+                        summary_only: true
+                    },
+                    method: 'GET',
+                    success: function(response) {
+                        // Update summary cards if response has summary data
+                        if (response.summary) {
+                            $('.total_penjualan').text('Rp ' + formatNumber(response.summary
+                                .total_penjualan));
+                            $('.total_hpp').text('Rp ' + formatNumber(response.summary
+                                .total_hpp));
+                            $('.total_keuntungan').text('Rp ' + formatNumber(response.summary
+                                .total_keuntungan));
+                        }
+                    }
+                });
+            });
+
+            function formatNumber(number) {
+                return new Intl.NumberFormat('id-ID').format(number);
+            }
+        });
+    </script>
 @endpush

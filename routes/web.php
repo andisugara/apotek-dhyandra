@@ -19,6 +19,7 @@ use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Laporan\LabaRugiController;
+use App\Http\Controllers\LaporanPenjualanController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication routes
@@ -117,9 +118,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('laporan/laba-rugi/print', [LabaRugiController::class, 'print'])->name('laporan.laba-rugi.print');
 
     // laporan penjualan
-    Route::get('laporan/penjualan', [PenjualanController::class, 'index'])->name('laporan.penjualan.index');
-    Route::get('laporan/penjualan/pdf', [PenjualanController::class, 'generatePdf'])->name('laporan.penjualan.pdf');
-    Route::get('laporan/penjualan/print', [PenjualanController::class, 'print'])->name('laporan.penjualan.print');
+    Route::get('laporan/penjualan', [LaporanPenjualanController::class, 'index'])->name('laporan.penjualan.index');
+    Route::post('laporan/penjualan/generate', [LaporanPenjualanController::class, 'generate'])->name('laporan.penjualan.generate');
+    Route::get('laporan/penjualan/pdf', [LaporanPenjualanController::class, 'exportPdf'])->name('laporan.penjualan.pdf');
 
     // Stock Opname - Note: specific routes must come BEFORE the resource route
     Route::get('stock_opname/search-obat', [StockOpnameController::class, 'searchObat'])->name('stock_opname.search_obat');
