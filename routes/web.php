@@ -104,7 +104,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('penjualan/{id}/print', [PenjualanController::class, 'printPdf'])->name('penjualan.print');
     Route::post('penjualan/search-obat', [PenjualanController::class, 'searchObat'])->name('penjualan.search_obat');
     Route::post('penjualan/get-stok-detail', [PenjualanController::class, 'getStokDetail'])->name('penjualan.get_stok_detail');
-    Route::resource('penjualan', PenjualanController::class)->except(['edit', 'update', 'destroy']);
+    Route::resource('penjualan', PenjualanController::class)->except(['edit', 'update']);
 
     // Settings management (view only for Apoteker, edit for Superadmin)
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');

@@ -61,6 +61,8 @@
     </div>
 @endsection
 
+@include('penjualan.delete_modal')
+
 @push('scripts')
     <script>
         $(document).ready(function() {
@@ -116,6 +118,14 @@
             const filterSearch = document.querySelector('[data-kt-docs-table-filter="search"]');
             filterSearch.addEventListener('keyup', function(e) {
                 table.search(e.target.value).draw();
+            });
+
+            // Delete confirmation
+            $(document).on('click', '.btn-delete', function() {
+                var id = $(this).data('id');
+                var url = "{{ route('penjualan.destroy', ':id') }}".replace(':id', id);
+                $('#deleteForm').attr('action', url);
+                $('#deleteModal').modal('show');
             });
         });
     </script>

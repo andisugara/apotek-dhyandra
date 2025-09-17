@@ -49,7 +49,11 @@ class PenjualanController extends Controller
                                 <a href="' . route('penjualan.print', $row->id) . '"
                                     class="btn btn-sm btn-icon btn-bg-light btn-active-color-success" target="_blank">
                                     <i class="ki-outline ki-printer fs-2"></i>
-                                </a>';
+                                </a>
+                                <button type="button" data-id="' . $row->id . '"
+                                    class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger btn-delete">
+                                    <i class="ki-outline ki-trash fs-2"></i>
+                                </button>';
                     return $actionBtn;
                 })
                 ->rawColumns(['action'])
@@ -501,5 +505,78 @@ class PenjualanController extends Controller
         ];
 
         return response()->json([$result]); // Wrap in array for consistency with the previous API
+    }
+
+    /**
+     * Delete a sales transaction and return medicines to stock.
+     *
+     * @param string $id Sales ID to be deleted
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(string $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            // Find the penjualan record with its details
+            $penjualan = Penjualan::with(['details', 'transaksiAkun'])->findOrFail($id);
+
+            // Process each penjualan detail and return items to stock
+            foreach ($penjualan->details as $detail) {
+                // Try to find existing stock with the same batch number, obat, and satuan
+                $stok = Stok::where('no_batch', $detail->no_batch)
+                    ->where('obat_id', $detail->obat_id)
+                    ->where('satuan_id', $detail->satuan_id)
+                    ->first();
+
+                if ($stok) {
+                    // Stock exists, increase the quantity
+                    $stok->qty += $detail->jumlah;
+                    $stok->save();
+
+                    Log::info("Returned {$detail->jumlah} units of obat {$detail->obat_id} batch {$detail->no_batch} back to stock. New qty: {$stok->qty}");
+                } else {
+                    // Stock doesn't exist, create a new stock entry
+                    $newStock = new Stok([
+                        'obat_id' => $detail->obat_id,
+                        'satuan_id' => $detail->satuan_id,
+                        'lokasi_id' => $detail->lokasi_id,
+                        'no_batch' => $detail->no_batch,
+                        'tanggal_expired' => $detail->tanggal_expired,
+                        'qty' => $detail->jumlah,
+                        'harga_beli' => $detail->harga_beli,
+                        'harga_jual' => $detail->harga
+                    ]);
+                    $newStock->save();
+
+                    Log::info("Created new stock entry for {$detail->jumlah} units of obat {$detail->obat_id} batch {$detail->no_batch}");
+                }
+
+                // Delete the detail record
+                $detail->delete();
+            }
+
+            // Delete related accounting transactions
+            if ($penjualan->transaksiAkun->count() > 0) {
+                foreach ($penjualan->transaksiAkun as $transaksi) {
+                    $transaksi->delete();
+                }
+                Log::info("Deleted {$penjualan->transaksiAkun->count()} accounting transactions for penjualan {$penjualan->no_faktur}");
+            }
+
+            // Delete the penjualan record
+            $penjualan->delete();
+
+            DB::commit();
+            return redirect()->route('penjualan.index')
+                ->with('success', 'Penjualan berhasil dihapus dan stok obat telah dikembalikan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting penjualan: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat menghapus penjualan: ' . $e->getMessage());
+        }
     }
 }
