@@ -5,17 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PenjualanDetail extends Model
+class ReturPenjualanDetail extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'penjualan_id',
+        'retur_penjualan_id',
+        'penjualan_detail_id',
         'obat_id',
         'satuan_id',
         'jumlah',
         'harga_beli',
-        'harga',
+        'harga_jual',
         'subtotal',
         'diskon',
         'ppn',
@@ -28,7 +29,7 @@ class PenjualanDetail extends Model
     protected $casts = [
         'jumlah' => 'integer',
         'harga_beli' => 'decimal:2',
-        'harga' => 'decimal:2',
+        'harga_jual' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'diskon' => 'decimal:2',
         'ppn' => 'decimal:2',
@@ -37,9 +38,14 @@ class PenjualanDetail extends Model
     ];
 
     // Relationships
-    public function penjualan()
+    public function returPenjualan()
     {
-        return $this->belongsTo(Penjualan::class);
+        return $this->belongsTo(ReturPenjualan::class, 'retur_penjualan_id');
+    }
+
+    public function penjualanDetail()
+    {
+        return $this->belongsTo(PenjualanDetail::class, 'penjualan_detail_id');
     }
 
     public function obat()
@@ -57,25 +63,15 @@ class PenjualanDetail extends Model
         return $this->belongsTo(LokasiObat::class, 'lokasi_id');
     }
 
-    public function stok()
-    {
-        return $this->belongsTo(Stok::class, 'no_batch', 'no_batch');
-    }
-
-    public function returDetails()
-    {
-        return $this->hasMany(ReturPenjualanDetail::class, 'penjualan_detail_id');
-    }
-
     // Accessor for formatted values
     public function getFormattedHargaBeliAttribute()
     {
         return number_format($this->harga_beli, 0, ',', '.');
     }
 
-    public function getFormattedHargaAttribute()
+    public function getFormattedHargaJualAttribute()
     {
-        return number_format($this->harga, 0, ',', '.');
+        return number_format($this->harga_jual, 0, ',', '.');
     }
 
     public function getFormattedSubtotalAttribute()

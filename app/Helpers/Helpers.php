@@ -53,8 +53,11 @@ if (!function_exists('getMenu')) {
 
                 $menu[] = [
                     'title' => 'Penjualan',
-                    'route' => 'penjualan.index',
                     'icon'  => 'ki-purchase',
+                    'children' => [
+                        ['title' => 'Penjualan Obat', 'route' => 'penjualan.index'],
+                        ['title' => 'Retur Penjualan', 'route' => 'retur_penjualan.index'],
+                    ],
                 ];
 
                 $menu[] = [
@@ -98,8 +101,11 @@ if (!function_exists('getMenu')) {
 
                 $menu[] = [
                     'title' => 'Penjualan',
-                    'route' => 'penjualan.index',
                     'icon'  => 'ki-purchase',
+                    'children' => [
+                        ['title' => 'Penjualan Obat', 'route' => 'penjualan.index'],
+                        ['title' => 'Retur Penjualan', 'route' => 'retur_penjualan.index'],
+                    ],
                 ];
             }
         }

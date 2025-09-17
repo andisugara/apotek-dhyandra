@@ -12,6 +12,7 @@ use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\PengeluaranController;
 use App\Http\Controllers\PenjualanController;
 use App\Http\Controllers\ReturPembelianController;
+use App\Http\Controllers\ReturPenjualanController;
 use App\Http\Controllers\SatuanObatController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockOpnameController;
@@ -92,6 +93,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('retur_pembelian/search_select2', [ReturPembelianController::class, 'searchSelect2'])->name('retur_pembelian.search_select2');
     Route::post('retur_pembelian/search_by_id', [ReturPembelianController::class, 'searchById'])->name('retur_pembelian.search_by_id');
     Route::resource('retur_pembelian', ReturPembelianController::class)->except(['edit', 'update']);
+
+    // Retur Penjualan management
+    Route::get('retur_penjualan/search_select2', [ReturPenjualanController::class, 'searchSelect2'])->name('retur_penjualan.search_select2');
+    Route::post('retur_penjualan/search_by_id', [ReturPenjualanController::class, 'searchById'])->name('retur_penjualan.search_by_id');
+    Route::resource('retur_penjualan', ReturPenjualanController::class)->except(['edit', 'update']);
 
     // Penjualan management
     Route::get('penjualan/{id}/print', [PenjualanController::class, 'printPdf'])->name('penjualan.print');

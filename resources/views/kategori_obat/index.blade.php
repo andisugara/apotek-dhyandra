@@ -34,7 +34,17 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             @endif
+            <div class="d-flex justify-content-end">
 
+                <!--begin::Search-->
+                <div class="d-flex align-items-center position-relative my-1 ">
+                    <i class="ki-duotone ki-magnifier fs-1 position-absolute ms-6"><span class="path1"></span><span
+                            class="path2"></span></i>
+                    <input type="text" data-kt-docs-table-filter="search"
+                        class="form-control form-control-solid w-250px ps-15" placeholder="Search Customers" />
+                </div>
+                <!--end::Search-->
+            </div>
             <table class="table align-middle table-row-dashed fs-6 gy-5" id="kategoriObatTable">
                 <thead>
                     <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
@@ -79,8 +89,9 @@
 
 @push('scripts')
     <script>
+        var table
         $(document).ready(function() {
-            const table = $('#kategoriObatTable').DataTable({
+            var table = $('#kategoriObatTable').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('kategori_obat.index') }}",
@@ -110,6 +121,12 @@
                     },
                 ]
             });
+
+            const filterSearch = document.querySelector('[data-kt-docs-table-filter="search"]');
+            filterSearch.addEventListener('keyup', function(e) {
+                table.search(e.target.value).draw();
+            });
+
 
             // Delete confirmation
             $('#kategoriObatTable').on('click', '.btn-delete', function() {
