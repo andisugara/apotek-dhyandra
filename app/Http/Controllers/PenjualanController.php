@@ -15,16 +15,48 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\App;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Yajra\DataTables\Facades\DataTables;
 
 class PenjualanController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $penjualans = Penjualan::with(['pasien', 'user'])->orderBy('created_at', 'desc')->paginate(10);
-        return view('penjualan.index', compact('penjualans'));
+        if ($request->ajax()) {
+            $data = Penjualan::with(['pasien', 'user'])->orderBy('created_at', 'desc');
+
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->addColumn('tanggal_formatted', function ($row) {
+                    return $row->tanggal_penjualan->format('d/m/Y');
+                })
+                ->addColumn('pasien_nama', function ($row) {
+                    return $row->pasien ? $row->pasien->nama : 'Umum';
+                })
+                ->addColumn('jenis_display', function ($row) {
+                    return $row->jenis_display;
+                })
+                ->addColumn('grand_total_formatted', function ($row) {
+                    return 'Rp ' . number_format($row->grand_total, 0, ',', '.');
+                })
+                ->addColumn('action', function ($row) {
+                    $actionBtn = '<a href="' . route('penjualan.show', $row->id) . '"
+                                    class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary">
+                                    <i class="ki-outline ki-eye fs-2"></i>
+                                </a>
+                                <a href="' . route('penjualan.print', $row->id) . '"
+                                    class="btn btn-sm btn-icon btn-bg-light btn-active-color-success" target="_blank">
+                                    <i class="ki-outline ki-printer fs-2"></i>
+                                </a>';
+                    return $actionBtn;
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
+
+        return view('penjualan.index');
     }
 
     /**

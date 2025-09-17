@@ -27,53 +27,96 @@
                 </div>
             @endif
 
+            <div class="d-flex justify-content-end mb-5">
+                <!--begin::Search-->
+                <div class="d-flex align-items-center position-relative">
+                    <i class="ki-duotone ki-magnifier fs-1 position-absolute ms-6"><span class="path1"></span><span
+                            class="path2"></span></i>
+                    <input type="text" data-kt-docs-table-filter="search"
+                        class="form-control form-control-solid w-250px ps-15" placeholder="Cari Penjualan" />
+                </div>
+                <!--end::Search-->
+            </div>
+
             <div class="table-responsive">
-                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4" id="penjualanTable">
                     <thead>
                         <tr class="fw-bold text-muted bg-light">
-                            <th class="min-w-100px">No</th>
-                            <th class="min-w-150px">No Faktur</th>
-                            <th class="min-w-150px">Tanggal</th>
-                            <th class="min-w-150px">Pasien</th>
-                            <th class="min-w-150px">Jenis</th>
-                            <th class="min-w-150px">Total</th>
-                            <th class="min-w-150px">User</th>
-                            <th class="min-w-100px text-end">Aksi</th>
+                            <th>No</th>
+                            <th>No Faktur</th>
+                            <th>Tanggal</th>
+                            <th>Pasien</th>
+                            <th>Jenis</th>
+                            <th>Total</th>
+                            <th>User</th>
+                            <th class="text-end">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($penjualans as $index => $penjualan)
-                            <tr>
-                                <td>{{ $penjualans->firstItem() + $index }}</td>
-                                <td>{{ $penjualan->no_faktur }}</td>
-                                <td>{{ $penjualan->tanggal_penjualan->format('d/m/Y') }}</td>
-                                <td>{{ $penjualan->pasien ? $penjualan->pasien->nama : 'Umum' }}</td>
-                                <td>{{ $penjualan->jenis_display }}</td>
-                                <td>Rp {{ $penjualan->formatted_grand_total }}</td>
-                                <td>{{ $penjualan->user->name }}</td>
-                                <td class="text-end">
-                                    <a href="{{ route('penjualan.show', $penjualan->id) }}"
-                                        class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary">
-                                        <i class="ki-outline ki-eye fs-2"></i>
-                                    </a>
-                                    <a href="{{ route('penjualan.print', $penjualan->id) }}"
-                                        class="btn btn-sm btn-icon btn-bg-light btn-active-color-success" target="_blank">
-                                        <i class="ki-outline ki-printer fs-2"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="text-center">Tidak ada data penjualan</td>
-                            </tr>
-                        @endforelse
+                        <!-- Data akan diisi oleh DataTables -->
                     </tbody>
                 </table>
-            </div>
-
-            <div class="d-flex justify-content-end mt-5">
-                {{ $penjualans->links() }}
             </div>
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        $(document).ready(function() {
+            var table = $('#penjualanTable').DataTable({
+                processing: true,
+                serverSide: true,
+                pageLength: 100, // Menampilkan 100 data per halaman
+                ajax: "{{ route('penjualan.index') }}",
+                columns: [{
+                        data: 'DT_RowIndex',
+                        name: 'DT_RowIndex',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'no_faktur',
+                        name: 'no_faktur'
+                    },
+                    {
+                        data: 'tanggal_formatted',
+                        name: 'tanggal_penjualan'
+                    },
+                    {
+                        data: 'pasien_nama',
+                        name: 'pasien.nama'
+                    },
+                    {
+                        data: 'jenis_display',
+                        name: 'jenis'
+                    },
+                    {
+                        data: 'grand_total_formatted',
+                        name: 'grand_total'
+                    },
+                    {
+                        data: 'user.name',
+                        name: 'user.name'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-end'
+                    },
+                ],
+                order: [
+                    [1, 'desc']
+                ], // Default sort by no faktur desc
+            });
+
+            // Search functionality
+            const filterSearch = document.querySelector('[data-kt-docs-table-filter="search"]');
+            filterSearch.addEventListener('keyup', function(e) {
+                table.search(e.target.value).draw();
+            });
+        });
+    </script>
+@endpush
