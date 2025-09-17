@@ -152,7 +152,16 @@
                 </div>
             @endif
             <!--end::Summary cards-->
-
+            <div class="d-flex justify-content-end mb-5">
+                <!--begin::Search-->
+                <div class="d-flex align-items-center position-relative">
+                    <i class="ki-duotone ki-magnifier fs-1 position-absolute ms-6"><span class="path1"></span><span
+                            class="path2"></span></i>
+                    <input type="text" data-kt-docs-table-filter="search"
+                        class="form-control form-control-solid w-250px ps-15" placeholder="Cari Penjualan" />
+                </div>
+                <!--end::Search-->
+            </div>
             <!--begin::Table container-->
             <div class="table-responsive">
                 <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4" id="penjualan_table">
@@ -192,7 +201,7 @@
             var table = $('#penjualan_table').DataTable({
                 processing: true,
                 serverSide: true,
-                pageLength: 100, // Menampilkan 100 data per halaman
+
                 ajax: {
                     url: "{{ route('laporan.penjualan.index') }}",
                     data: function(d) {
@@ -220,7 +229,7 @@
                     },
                     {
                         data: 'satuan',
-                        name: 'satuan'
+                        name: 'satuan.nama'
                     },
                     {
                         data: 'harga_beli_formatted',
@@ -260,16 +269,11 @@
                 order: [
                     [2, 'desc']
                 ], // Default sort by tanggal
-                dom: 'Bfrtip',
-                buttons: [
-                    'copy', 'csv', 'excel', 'pdf', 'print'
-                ],
                 language: {
                     zeroRecords: "Tidak ada data yang ditemukan",
                     info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
                     infoEmpty: "Menampilkan 0 sampai 0 dari 0 entri",
                     infoFiltered: "(disaring dari _MAX_ total entri)",
-                    search: "Cari:",
                     lengthMenu: "Tampilkan _MENU_ entri",
                     paginate: {
                         first: "Pertama",
@@ -278,6 +282,10 @@
                         previous: "Sebelumnya"
                     }
                 }
+            });
+            const filterSearch = document.querySelector('[data-kt-docs-table-filter="search"]');
+            filterSearch.addEventListener('keyup', function(e) {
+                table.search(e.target.value).draw();
             });
 
             // Filter form submit handler

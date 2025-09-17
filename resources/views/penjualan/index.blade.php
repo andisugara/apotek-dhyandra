@@ -67,7 +67,7 @@
             var table = $('#penjualanTable').DataTable({
                 processing: true,
                 serverSide: true,
-                pageLength: 100, // Menampilkan 100 data per halaman
+
                 ajax: "{{ route('penjualan.index') }}",
                 columns: [{
                         data: 'DT_RowIndex',

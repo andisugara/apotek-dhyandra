@@ -80,6 +80,16 @@
                 </div>
             @endif
 
+            <div class="d-flex justify-content-end">
+                <!--begin::Search-->
+                <div class="d-flex align-items-center position-relative my-1 ">
+                    <i class="ki-duotone ki-magnifier fs-1 position-absolute ms-6"><span class="path1"></span><span
+                            class="path2"></span></i>
+                    <input type="text" data-kt-docs-table-filter="search"
+                        class="form-control form-control-solid w-250px ps-15" placeholder="Cari Supplier" />
+                </div>
+                <!--end::Search-->
+            </div>
             <table class="table align-middle table-row-dashed fs-6 gy-5" id="pengeluaran-table">
                 <thead>
                     <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
@@ -125,9 +135,10 @@
 
 @push('scripts')
     <script>
+        var table;
         $(document).ready(function() {
             // Initialize DataTable with filter
-            const table = $('#pengeluaran-table').DataTable({
+            table = $('#pengeluaran-table').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
@@ -193,6 +204,11 @@
                         sortDescending: ": aktifkan untuk mengurutkan kolom ke bawah"
                     }
                 }
+            });
+
+            const filterSearch = document.querySelector('[data-kt-docs-table-filter="search"]');
+            filterSearch.addEventListener('keyup', function(e) {
+                table.search(e.target.value).draw();
             });
 
             // Handle filter form submission

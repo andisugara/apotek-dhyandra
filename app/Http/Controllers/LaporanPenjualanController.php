@@ -48,6 +48,9 @@ class LaporanPenjualanController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
+                ->addColumn('satuan', function ($row) {
+                    return $row->satuan ?? '-';
+                })
                 ->addColumn('tanggal_formatted', function ($row) {
                     return Carbon::parse($row->tanggal_penjualan)->format('d/m/Y H:i');
                 })
