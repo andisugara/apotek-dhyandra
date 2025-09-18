@@ -77,6 +77,7 @@ if (!function_exists('getMenu')) {
                     'icon'  => 'ki-file',
                     'children' => [
                         ['title' => 'Laporan Penjualan', 'route' => 'laporan.penjualan.index'],
+                        ['title' => 'Laporan Stok Obat', 'route' => 'laporan.stok-obat.index'],
                         ['title' => 'Laporan Laba Rugi', 'route' => 'laporan.laba-rugi.index'],
                     ],
                 ];
