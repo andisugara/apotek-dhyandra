@@ -287,6 +287,8 @@
                                         <th>No. Batch</th>
                                         <th>Expired</th>
                                         <th>Qty</th>
+                                        <th>Harga Beli</th>
+                                        <th>Harga Jual</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -404,6 +406,16 @@
                                 required />
                             <div class="invalid-feedback"></div>
                         </div>
+                        <div class="mb-5">
+                            <label class="form-label required">Harga Beli</label>
+                            <input type="text" name="harga_beli" class="form-control money" required />
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label required">Harga Jual</label>
+                            <input type="text" name="harga_jual" class="form-control money" required />
+                            <div class="invalid-feedback"></div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -439,7 +451,7 @@
             });
 
             // Format currency inputs
-            $('.input-currency').on('input', function() {
+            $('.input-currency, .money').on('input', function() {
                 let value = $(this).val().replace(/[^0-9]/g, '');
                 if (value) {
                     value = parseInt(value).toLocaleString('id-ID');
@@ -451,6 +463,20 @@
                     calculateSellingPrice();
                 }
             });
+
+            // Initialize money formatting for all elements with money class
+            function initMoneyFormatting() {
+                $('.money').each(function() {
+                    let value = $(this).val().replace(/[^0-9]/g, '');
+                    if (value) {
+                        value = parseInt(value).toLocaleString('id-ID');
+                        $(this).val(value);
+                    }
+                });
+            }
+
+            // Initialize money formatting
+            initMoneyFormatting();
 
             // Calculate selling price when profit percentage changes
             $('#formAddSatuan input[name="profit_persen"]').on('input', function() {
@@ -587,6 +613,31 @@
                 }
             });
 
+            // Handle satuan selection in the Add Stock modal
+            $('#formAddStok select[name="satuan_id"]').on('change', function() {
+                const selectedSatuanId = $(this).val();
+                if (selectedSatuanId) {
+                    const selectedSatuan = satuans.find(item => item.satuan_id == selectedSatuanId);
+                    if (selectedSatuan) {
+                        // Only set default prices if the fields are empty or 0
+                        const currentHargaBeli = $('#formAddStok input[name="harga_beli"]').val().replace(
+                            /\D/g, '');
+                        const currentHargaJual = $('#formAddStok input[name="harga_jual"]').val().replace(
+                            /\D/g, '');
+
+                        if (!currentHargaBeli || currentHargaBeli === '0') {
+                            $('#formAddStok input[name="harga_beli"]').val(parseInt(selectedSatuan
+                                .harga_beli).toLocaleString('id-ID'));
+                        }
+
+                        if (!currentHargaJual || currentHargaJual === '0') {
+                            $('#formAddStok input[name="harga_jual"]').val(parseInt(selectedSatuan
+                                .harga_jual).toLocaleString('id-ID'));
+                        }
+                    }
+                }
+            });
+
             // Open modal to add stok
             $('#btnAddStok').on('click', function() {
                 // Reset form
@@ -600,6 +651,24 @@
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 const tomorrowStr = tomorrow.toISOString().split('T')[0];
                 $('#formAddStok input[name="tanggal_expired"]').attr('min', tomorrowStr);
+
+                // Set default values for price fields
+                const selectedSatuanId = $('#formAddStok select[name="satuan_id"]').val();
+                if (selectedSatuanId) {
+                    const selectedSatuan = satuans.find(item => item.satuan_id == selectedSatuanId);
+                    if (selectedSatuan) {
+                        $('#formAddStok input[name="harga_beli"]').val(parseInt(selectedSatuan.harga_beli)
+                            .toLocaleString('id-ID'));
+                        $('#formAddStok input[name="harga_jual"]').val(parseInt(selectedSatuan.harga_jual)
+                            .toLocaleString('id-ID'));
+                    } else {
+                        $('#formAddStok input[name="harga_beli"]').val('0');
+                        $('#formAddStok input[name="harga_jual"]').val('0');
+                    }
+                } else {
+                    $('#formAddStok input[name="harga_beli"]').val('0');
+                    $('#formAddStok input[name="harga_jual"]').val('0');
+                }
 
                 $('#modalAddStok').modal('show');
             });
@@ -671,6 +740,10 @@
                 // Generate unique ID for this stock
                 const stockId = 'new-' + Date.now();
 
+                // Get price values and remove formatting
+                const hargaBeli = $('#formAddStok input[name="harga_beli"]').val().replace(/\D/g, '');
+                const hargaJual = $('#formAddStok input[name="harga_jual"]').val().replace(/\D/g, '');
+
                 // Add to stocks array
                 stocks.push({
                     id: stockId,
@@ -679,6 +752,8 @@
                     no_batch: noBatch,
                     tanggal_expired: tanggalExpired,
                     qty: qty,
+                    harga_beli: hargaBeli,
+                    harga_jual: hargaJual
                 });
 
                 // Format date for display
@@ -689,6 +764,10 @@
                     year: 'numeric'
                 });
 
+                // Format prices for display
+                const formattedHargaBeli = new Intl.NumberFormat('id-ID').format(hargaBeli);
+                const formattedHargaJual = new Intl.NumberFormat('id-ID').format(hargaJual);
+
                 // Add row to table
                 const newRow = `
                     <tr id="stock-row-${stockId}">
@@ -697,6 +776,8 @@
                         <td>${noBatch}</td>
                         <td>${formattedDate}</td>
                         <td>${qty}</td>
+                        <td>${formattedHargaBeli}</td>
+                        <td>${formattedHargaJual}</td>
                         <td>
                             <button type="button" class="btn btn-sm btn-danger btn-delete-stock" data-stock-id="${stockId}">
                                 Hapus
@@ -844,7 +925,7 @@
                     `<input type="hidden" name="${prefix}[diskon_persen]" value="${satuan.diskon_persen}">`);
                 $('#obatForm').append(
                     `<input type="hidden" name="${prefix}[profit_persen]" value="${satuan.profit_persen || 10}">`
-                    );
+                );
                 $('#obatForm').append(
                     `<input type="hidden" name="${prefix}[harga_jual]" value="${satuan.harga_jual}">`);
             });
@@ -860,6 +941,11 @@
                 $('#obatForm').append(
                     `<input type="hidden" name="${prefix}[tanggal_expired]" value="${stok.tanggal_expired}">`);
                 $('#obatForm').append(`<input type="hidden" name="${prefix}[qty]" value="${stok.qty}">`);
+                // Add price fields
+                $('#obatForm').append(
+                    `<input type="hidden" name="${prefix}[harga_beli]" value="${stok.harga_beli || 0}">`);
+                $('#obatForm').append(
+                    `<input type="hidden" name="${prefix}[harga_jual]" value="${stok.harga_jual || 0}">`);
             });
         }
 

@@ -182,6 +182,8 @@
                                     <th>No. Batch</th>
                                     <th>Tanggal Expired</th>
                                     <th>Qty</th>
+                                    <th>Harga Beli</th>
+                                    <th>Harga Jual</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -194,6 +196,8 @@
                                         <td>{{ $stokItem->no_batch }}</td>
                                         <td>{{ $stokItem->tanggal_expired->format('d/m/Y') }}</td>
                                         <td>{{ $stokItem->qty }}</td>
+                                        <td>Rp{{ number_format($stokItem->harga_beli, 0, ',', '.') }}</td>
+                                        <td>Rp{{ number_format($stokItem->harga_jual, 0, ',', '.') }}</td>
                                         <td>
                                             @if ($stokItem->is_expired)
                                                 <span class="badge badge-light-danger">Expired</span>
@@ -208,7 +212,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center">Belum ada data stok</td>
+                                        <td colspan="9" class="text-center">Belum ada data stok</td>
                                     </tr>
                                 @endforelse
                             </tbody>

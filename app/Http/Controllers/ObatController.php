@@ -158,8 +158,8 @@ class ObatController extends Controller
                                 'qty' => $qty,
                                 'qty_awal' => $qty, // Set qty_awal to the same as qty initially
                                 'pembelian_detail_id' => $stok['pembelian_detail_id'] ?? null,
-                                'harga_beli' => $obatSatuan->harga_beli,
-                                'harga_jual' => $obatSatuan->harga_jual,
+                                'harga_beli' => $stok['harga_beli'] ?? $obatSatuan->harga_beli,
+                                'harga_jual' => $stok['harga_jual'] ?? $obatSatuan->harga_jual,
                             ]);
                         }
                     }
@@ -302,16 +302,23 @@ class ObatController extends Controller
                             if (isset($stok['id']) && $stok['id']) {
                                 $existingStock = Stok::find($stok['id']);
                                 if ($existingStock) {
-                                    $existingStock->update([
+                                    // Prepare update data
+                                    $updateData = [
                                         'obat_satuan_id' => $obatSatuan->id, // Update obat_satuan_id
                                         'lokasi_id' => $stok['lokasi_id'],
                                         'no_batch' => $stok['no_batch'],
                                         'tanggal_expired' => $stok['tanggal_expired'],
                                         'qty' => $stok['qty'] ?? $existingStock->qty,
                                         'qty_awal' => $stok['qty'] ?? $existingStock->qty_awal, // Update qty_awal if qty is changed
-                                        'harga_beli' => $existingStock->harga_beli ?? $obatSatuan->harga_beli,
-                                        'harga_jual' => $existingStock->harga_jual ?? $obatSatuan->harga_jual,
-                                    ]);
+                                    ];
+
+                                    // Only update prices if not linked to a purchase
+                                    if (!$existingStock->pembelian_detail_id) {
+                                        $updateData['harga_beli'] = $stok['harga_beli'] ?? $existingStock->harga_beli ?? $obatSatuan->harga_beli;
+                                        $updateData['harga_jual'] = $stok['harga_jual'] ?? $existingStock->harga_jual ?? $obatSatuan->harga_jual;
+                                    }
+
+                                    $existingStock->update($updateData);
                                 } else {
                                     // If stok ID is provided but not found, create new stock
                                     $qty = $stok['qty'] ?? 0;
@@ -326,8 +333,8 @@ class ObatController extends Controller
                                         'qty' => $qty,
                                         'qty_awal' => $qty, // Set qty_awal to the same as qty initially
                                         'pembelian_detail_id' => $stok['pembelian_detail_id'] ?? null,
-                                        'harga_beli' => $obatSatuan->harga_beli,
-                                        'harga_jual' => $obatSatuan->harga_jual,
+                                        'harga_beli' => $stok['harga_beli'] ?? $obatSatuan->harga_beli,
+                                        'harga_jual' => $stok['harga_jual'] ?? $obatSatuan->harga_jual,
                                     ]);
                                 }
                             } else {
@@ -343,9 +350,9 @@ class ObatController extends Controller
                                     'tanggal_expired' => $stok['tanggal_expired'],
                                     'qty' => $qty,
                                     'qty_awal' => $qty, // Set qty_awal to the same as qty initially
-                                    'pembelian_detail_id' => $existingStock->pembelian_detail_id ?? null,
-                                    'harga_beli' => $obatSatuan->harga_beli,
-                                    'harga_jual' => $obatSatuan->harga_jual,
+                                    'pembelian_detail_id' => $stok['pembelian_detail_id'] ?? null,
+                                    'harga_beli' => $stok['harga_beli'] ?? $obatSatuan->harga_beli,
+                                    'harga_jual' => $stok['harga_jual'] ?? $obatSatuan->harga_jual,
                                 ]);
                             }
                         }
@@ -528,6 +535,8 @@ class ObatController extends Controller
             'no_batch' => 'required|string',
             'tanggal_expired' => 'required|date|after:today',
             'qty' => 'required|integer|min:1',
+            'harga_beli' => 'required|numeric|min:0',
+            'harga_jual' => 'required|numeric|min:0',
         ]);
 
         try {
@@ -555,6 +564,8 @@ class ObatController extends Controller
                 'tanggal_expired' => $validated['tanggal_expired'],
                 'qty' => $qty,
                 'qty_awal' => $qty, // Set qty_awal to the same as qty initially
+                'harga_beli' => $validated['harga_beli'],
+                'harga_jual' => $validated['harga_jual'],
             ]);
 
             return response()->json([
@@ -572,10 +583,21 @@ class ObatController extends Controller
      */
     public function updateStock(Request $request, $id)
     {
-        $validated = $request->validate([
+        $validationRules = [
             'id' => 'required|exists:stok,id',
             'qty' => 'required|integer|min:0',
-        ]);
+        ];
+
+        // Add price validation if submitted
+        if ($request->has('harga_beli')) {
+            $validationRules['harga_beli'] = 'required|numeric|min:0';
+        }
+
+        if ($request->has('harga_jual')) {
+            $validationRules['harga_jual'] = 'required|numeric|min:0';
+        }
+
+        $validated = $request->validate($validationRules);
 
         try {
             $stok = Stok::findOrFail($validated['id']);
@@ -584,7 +606,29 @@ class ObatController extends Controller
                 return response()->json(['error' => 'Data tidak valid'], 400);
             }
 
-            $stok->update(['qty' => $validated['qty']]);
+            // Start with updating qty which is always allowed
+            $updateData = ['qty' => $validated['qty']];
+
+            // Check if this stock is linked to a purchase detail
+            if ($stok->pembelian_detail_id) {
+                // If linked to a purchase, prices cannot be updated directly
+                if ($request->has('harga_beli') || $request->has('harga_jual')) {
+                    return response()->json([
+                        'error' => 'Harga tidak dapat diubah karena stok terkait dengan pembelian. Silahkan edit data pembelian untuk mengubah harga.'
+                    ], 400);
+                }
+            } else {
+                // If not linked to a purchase, prices can be updated
+                if ($request->has('harga_beli')) {
+                    $updateData['harga_beli'] = $validated['harga_beli'];
+                }
+
+                if ($request->has('harga_jual')) {
+                    $updateData['harga_jual'] = $validated['harga_jual'];
+                }
+            }
+
+            $stok->update($updateData);
 
             return response()->json([
                 'success' => true,
