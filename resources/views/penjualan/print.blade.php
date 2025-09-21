@@ -23,9 +23,9 @@
 
             .receipt {
                 width: 100%;
-                max-width: 58mm;
+                max-width: 90%;
                 margin: 0 auto;
-                padding: 2mm;
+                padding: 0mm;
                 box-sizing: border-box;
             }
 
@@ -247,6 +247,14 @@
                     <tr class="total-row">
                         <td style="text-align: left;">PPN</td>
                         <td style="text-align: right;">Rp {{ $penjualan->formatted_ppn_total }}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td style="text-align: left;">Tuslah</td>
+                        <td style="text-align: right;">Rp {{ $penjualan->formatted_tuslah_total }}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td style="text-align: left;">Embalase</td>
+                        <td style="text-align: right;">Rp {{ $penjualan->formatted_embalase_total }}</td>
                     </tr>
                     <tr class="total-row grand-total">
                         <td style="text-align: left;">Grand Total</td>

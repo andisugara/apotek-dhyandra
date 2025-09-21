@@ -67,6 +67,14 @@
                             <td>: Rp {{ $penjualan->formatted_ppn_total }}</td>
                         </tr>
                         <tr>
+                            <th>Tuslah</th>
+                            <td>: Rp {{ $penjualan->formatted_tuslah_total }}</td>
+                        </tr>
+                        <tr>
+                            <th>Embalase</th>
+                            <td>: Rp {{ $penjualan->formatted_embalase_total }}</td>
+                        </tr>
+                        <tr>
                             <th>Grand Total</th>
                             <td class="fw-bold">: Rp {{ $penjualan->formatted_grand_total }}</td>
                         </tr>
@@ -99,6 +107,8 @@
                                     <th>Jumlah</th>
                                     <th>Diskon</th>
                                     <th>PPN</th>
+                                    <th>Tuslah</th>
+                                    <th>Embalase</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
@@ -121,6 +131,8 @@
                                         <td>{{ $detail->jumlah }}</td>
                                         <td>Rp {{ $detail->formatted_diskon }}</td>
                                         <td>Rp {{ $detail->formatted_ppn }}</td>
+                                        <td>Rp {{ $detail->formatted_tuslah }}</td>
+                                        <td>Rp {{ $detail->formatted_embalase }}</td>
                                         <td>Rp {{ $detail->formatted_total }}</td>
                                     </tr>
                                 @endforeach

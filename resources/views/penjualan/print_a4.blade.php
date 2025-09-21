@@ -456,6 +456,22 @@
                         </td>
                     </tr>
                     <tr>
+                        <td colspan="5" class="text-right">
+                            <strong>Tuslah</strong>
+                        </td>
+                        <td colspan="2" class="text-right">
+                            <strong>Rp {{ $penjualan->formatted_tuslah_total }}</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="text-right">
+                            <strong>Embalase</strong>
+                        </td>
+                        <td colspan="2" class="text-right">
+                            <strong>Rp {{ $penjualan->formatted_embalase_total }}</strong>
+                        </td>
+                    </tr>
+                    <tr>
                         <td colspan="5" class="text-right"
                             style="background-color: #2c3e50; color: white; font-weight: bold; padding: 8px 5px;">
                             <strong>GRAND TOTAL</strong>

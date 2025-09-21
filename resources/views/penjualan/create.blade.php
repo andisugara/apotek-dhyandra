@@ -55,7 +55,7 @@
                                                         <th>Harga</th>
                                                         <th>Jumlah</th>
                                                         <th>Diskon</th>
-                                                        <th>Subtotal</th>
+                                                        <th>Subtotal + Biaya</th>
                                                         <th>Aksi</th>
                                                     </tr>
                                                 </thead>
@@ -179,6 +179,26 @@
                                     </div>
                                 </div>
 
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Tuslah</label>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <span id="tuslahDisplay">Rp 0</span>
+                                        <input type="hidden" name="tuslah_total" id="tuslah_total" value="0">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Embalase</label>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <span id="embalaseDisplay">Rp 0</span>
+                                        <input type="hidden" name="embalase_total" id="embalase_total" value="0">
+                                    </div>
+                                </div>
+
                                 <div class="row mb-5">
                                     <div class="col-6">
                                         <label class="form-label fw-bold fs-4">Grand Total</label>
@@ -287,8 +307,28 @@
             <td>
                 <input type="hidden" name="detail[__index__][subtotal]" class="item-subtotal">
                 <input type="hidden" name="detail[__index__][ppn]" class="ppn" value="0">
+                <input type="hidden" name="detail[__index__][tuslah]" class="tuslah" value="0">
+                <input type="hidden" name="detail[__index__][embalase]" class="embalase" value="0">
                 <input type="hidden" name="detail[__index__][total]" class="total">
                 <span class="total-display"></span>
+                <button type="button" class="btn btn-sm btn-icon btn-light-primary btn-active-primary show-extras"
+                    data-bs-toggle="collapse" data-bs-target=".item-extras-__index__">
+                    <i class="ki-outline ki-plus-square fs-2"></i>
+                </button>
+                <div class="collapse mt-2 item-extras-__index__">
+                    <div class="card card-body p-2 bg-light-primary">
+                        <div class="mb-2">
+                            <label class="form-label fs-8">Tuslah (Rp)</label>
+                            <input type="number" class="form-control form-control-sm tuslah-input" min="0"
+                                value="0" placeholder="Tuslah">
+                        </div>
+                        <div>
+                            <label class="form-label fs-8">Embalase (Rp)</label>
+                            <input type="number" class="form-control form-control-sm embalase-input" min="0"
+                                value="0" placeholder="Embalase">
+                        </div>
+                    </div>
+                </div>
             </td>
             <td>
                 <button type="button" class="btn btn-sm btn-icon btn-light-danger btn-active-danger remove-item">
@@ -598,6 +638,23 @@
             $(document).on('change', '.jumlah, .diskon-persen', function() {
                 calculateRowTotal($(this).closest('tr'));
                 calculateTotals(); // Update grand total after row calculation
+            });
+
+            // Handle tuslah and embalase input changes
+            $(document).on('input', '.tuslah-input', function() {
+                const row = $(this).closest('tr');
+                const value = parseFloat($(this).val() || 0);
+                row.find('.tuslah').val(value.toFixed(2));
+                calculateRowTotal(row);
+                calculateTotals();
+            });
+
+            $(document).on('input', '.embalase-input', function() {
+                const row = $(this).closest('tr');
+                const value = parseFloat($(this).val() || 0);
+                row.find('.embalase').val(value.toFixed(2));
+                calculateRowTotal(row);
+                calculateTotals();
             }); // Form submission validation
             $('#penjualanForm').on('submit', function(e) {
                 if ($('#cartItems .item-row').length === 0) {
@@ -645,6 +702,23 @@
                 } catch (error) {
                     console.error("Error parsing stock data:", error);
                     alert("Terjadi kesalahan saat memilih batch");
+                }
+            });
+
+            // Toggle icon for extras button
+            $(document).on('click', '.show-extras', function() {
+                const $button = $(this);
+                const $icon = $button.find('i');
+
+                // Check if the target collapse is currently hidden
+                const isCollapsed = !$($(this).data('bs-target')).hasClass('show');
+
+                if (isCollapsed) {
+                    // If expanding, change to minus icon
+                    $icon.removeClass('ki-plus-square').addClass('ki-minus-square');
+                } else {
+                    // If collapsing, change to plus icon
+                    $icon.removeClass('ki-minus-square').addClass('ki-plus-square');
                 }
             });
         });
@@ -769,10 +843,14 @@
             const harga = parseFloat(row.find('.harga').val() || 0);
             const diskonPersen = parseFloat(row.find('.diskon-persen').val() || 0);
 
+            // Get tuslah and embalase values from input fields
+            const tuslahInput = parseFloat(row.find('.tuslah-input').val() || 0);
+            const embalaseInput = parseFloat(row.find('.embalase-input').val() || 0);
+
             // Calculate values
             const subtotal = quantity * harga;
             const diskon = (diskonPersen / 100) * subtotal;
-            const total = subtotal - diskon;
+            const total = subtotal - diskon + tuslahInput + embalaseInput;
 
             console.log('Row calculation:', {
                 quantity,
@@ -780,6 +858,8 @@
                 diskonPersen,
                 subtotal,
                 diskon,
+                tuslahInput,
+                embalaseInput,
                 total
             });
 
@@ -787,6 +867,8 @@
             row.find('.item-subtotal').val(subtotal.toFixed(2));
             row.find('.diskon').val(diskon.toFixed(2));
             row.find('.ppn').val(0); // PPN sudah termasuk di harga jual
+            row.find('.tuslah').val(tuslahInput.toFixed(2));
+            row.find('.embalase').val(embalaseInput.toFixed(2));
             row.find('.total').val(total.toFixed(2));
 
             // Update display
@@ -796,6 +878,8 @@
             return {
                 subtotal,
                 diskon,
+                tuslah: tuslahInput,
+                embalase: embalaseInput,
                 total
             };
         } // Update cart status
@@ -812,29 +896,39 @@
             let subtotal = 0;
             let totalDiskon = 0;
             let totalPpn = 0; // Keeping this for compatibility, but will be zero
+            let totalTuslah = 0;
+            let totalEmbalase = 0;
 
             console.log('Starting total calculation...');
 
             $('#cartItems .item-row').each(function() {
                 const rowSubtotal = parseFloat($(this).find('.item-subtotal').val() || 0);
                 const rowDiskon = parseFloat($(this).find('.diskon').val() || 0);
+                const rowTuslah = parseFloat($(this).find('.tuslah').val() || 0);
+                const rowEmbalase = parseFloat($(this).find('.embalase').val() || 0);
 
                 console.log('Row values:', {
                     qty: $(this).find('.jumlah').val(),
                     price: $(this).find('.harga').val(),
                     subtotal: rowSubtotal,
-                    diskon: rowDiskon
+                    diskon: rowDiskon,
+                    tuslah: rowTuslah,
+                    embalase: rowEmbalase
                 });
 
                 subtotal += rowSubtotal;
                 totalDiskon += rowDiskon;
+                totalTuslah += rowTuslah;
+                totalEmbalase += rowEmbalase;
                 // PPN already included in price, so no need to add it
             });
 
-            const grandTotal = subtotal - totalDiskon;
+            const grandTotal = subtotal - totalDiskon + totalTuslah + totalEmbalase;
             console.log('Final calculation:', {
                 subtotal,
                 totalDiskon,
+                totalTuslah,
+                totalEmbalase,
                 grandTotal
             });
 
@@ -848,6 +942,13 @@
             // Keep PPN display but set to 0 as it's already included in price
             $('#ppn_total').val('0.00');
             $('#ppnDisplay').text('Rp 0'); // PPN already included in prices
+
+            // Update tuslah and embalase totals
+            $('#tuslah_total').val(totalTuslah.toFixed(2));
+            $('#tuslahDisplay').text('Rp ' + formatNumber(totalTuslah));
+
+            $('#embalase_total').val(totalEmbalase.toFixed(2));
+            $('#embalaseDisplay').text('Rp ' + formatNumber(totalEmbalase));
 
             $('#grand_total').val(grandTotal.toFixed(2));
             $('#grandTotalDisplay').text('Rp ' + formatNumber(grandTotal));

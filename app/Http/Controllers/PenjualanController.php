@@ -90,6 +90,8 @@ class PenjualanController extends Controller
             'subtotal' => 'required|numeric|min:0',
             'diskon_total' => 'required|numeric|min:0',
             'ppn_total' => 'required|numeric|min:0',
+            'tuslah_total' => 'required|numeric|min:0',
+            'embalase_total' => 'required|numeric|min:0',
             'grand_total' => 'required|numeric|min:0',
             'bayar' => 'required|numeric|min:0',
             'kembalian' => 'required|numeric|min:0',
@@ -101,6 +103,8 @@ class PenjualanController extends Controller
             'detail.*.subtotal' => 'required|numeric|min:0',
             'detail.*.diskon' => 'required|numeric|min:0',
             'detail.*.ppn' => 'required|numeric|min:0',
+            'detail.*.tuslah' => 'required|numeric|min:0',
+            'detail.*.embalase' => 'required|numeric|min:0',
             'detail.*.total' => 'required|numeric|min:0',
             'detail.*.no_batch' => 'required|string',
             'detail.*.lokasi_id' => 'required|exists:lokasi_obat,id',
@@ -131,6 +135,8 @@ class PenjualanController extends Controller
                 'subtotal' => $validated['subtotal'],
                 'diskon_total' => $validated['diskon_total'],
                 'ppn_total' => $validated['ppn_total'],
+                'tuslah_total' => $validated['tuslah_total'],
+                'embalase_total' => $validated['embalase_total'],
                 'grand_total' => $validated['grand_total'],
                 'bayar' => $validated['bayar'],
                 'kembalian' => $validated['kembalian'],
@@ -154,6 +160,8 @@ class PenjualanController extends Controller
                     'subtotal' => $detail['subtotal'],
                     'diskon' => $detail['diskon'],
                     'ppn' => $detail['ppn'],
+                    'tuslah' => $detail['tuslah'],
+                    'embalase' => $detail['embalase'],
                     'total' => $detail['total'],
                     'no_batch' => $detail['no_batch'],
                     'tanggal_expired' => null, // Will be updated below
@@ -292,19 +300,23 @@ class PenjualanController extends Controller
                 'Attachment' => false // Set to false to open in browser
             ]);
         } else {
-            // Set custom paper size for thermal printer (58mm width)
-            // Lebarkan sedikit: 80mm = ~302 points (72 points per inch)
-            // Tinggi tetap cukup besar untuk seluruh konten
-            $customPaper = array(0, 0, 302, 800);
+            // Set custom paper size for thermal printer (82mm width)
+            // 82mm ≈ 232 points (1 mm ≈ 2.83465 points)
+            $customPaper = [0, 0, 232, 800];
 
-            // Generate PDF dengan ukuran kertas custom (80mm thermal)
+            // Set DomPDF options for smaller left/right margins
             $pdf = Pdf::setPaper($customPaper, 'portrait');
-
-            // Konfigurasi DomPDF untuk hasil thermal lebih baik
             $pdf->setOption('defaultFont', 'sans-serif');
             $pdf->setOption('isRemoteEnabled', true);
             $pdf->setOption('isHtml5ParserEnabled', true);
             $pdf->setOption('isFontSubsettingEnabled', true);
+
+            // Set margin kiri-kanan lebih kecil (misal 2mm = 5.67pt)
+            $pdf->setOption('margin-left', 0);
+            $pdf->setOption('margin-right', 0);
+            // Margin atas/bawah bisa diatur juga jika perlu
+            // $pdf->setOption('margin-top', 5);
+            // $pdf->setOption('margin-bottom', 5);
 
             $pdf->loadView('penjualan.print', compact('penjualan', 'setting'));
 

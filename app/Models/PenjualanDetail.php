@@ -19,6 +19,8 @@ class PenjualanDetail extends Model
         'subtotal',
         'diskon',
         'ppn',
+        'tuslah',
+        'embalase',
         'total',
         'no_batch',
         'tanggal_expired',
@@ -32,6 +34,8 @@ class PenjualanDetail extends Model
         'subtotal' => 'decimal:2',
         'diskon' => 'decimal:2',
         'ppn' => 'decimal:2',
+        'tuslah' => 'decimal:2',
+        'embalase' => 'decimal:2',
         'total' => 'decimal:2',
         'tanggal_expired' => 'date',
     ];
@@ -91,6 +95,16 @@ class PenjualanDetail extends Model
     public function getFormattedPpnAttribute()
     {
         return number_format($this->ppn, 0, ',', '.');
+    }
+
+    public function getFormattedTuslahAttribute()
+    {
+        return number_format($this->tuslah, 0, ',', '.');
+    }
+
+    public function getFormattedEmbalaseAttribute()
+    {
+        return number_format($this->embalase, 0, ',', '.');
     }
 
     public function getFormattedTotalAttribute()

@@ -17,6 +17,8 @@ class Penjualan extends Model
         'subtotal',
         'diskon_total',
         'ppn_total',
+        'tuslah_total',
+        'embalase_total',
         'grand_total',
         'bayar',
         'kembalian',
@@ -29,6 +31,8 @@ class Penjualan extends Model
         'subtotal' => 'decimal:2',
         'diskon_total' => 'decimal:2',
         'ppn_total' => 'decimal:2',
+        'tuslah_total' => 'decimal:2',
+        'embalase_total' => 'decimal:2',
         'grand_total' => 'decimal:2',
         'bayar' => 'decimal:2',
         'kembalian' => 'decimal:2',
@@ -70,6 +74,16 @@ class Penjualan extends Model
     public function getFormattedPpnTotalAttribute()
     {
         return number_format($this->ppn_total, 0, ',', '.');
+    }
+
+    public function getFormattedTuslahTotalAttribute()
+    {
+        return number_format($this->tuslah_total, 0, ',', '.');
+    }
+
+    public function getFormattedEmbalaseTotalAttribute()
+    {
+        return number_format($this->embalase_total, 0, ',', '.');
     }
 
     public function getFormattedGrandTotalAttribute()
