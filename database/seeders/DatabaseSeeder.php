@@ -175,5 +175,29 @@ class DatabaseSeeder extends Seeder
         // DB::table('akun')->insert([
         //     ['kode' => '1001', 'nama' => 'Kas', 'status' => 1, 'is_default' => 1]
         // ]);
+
+        // Update Stok.harga_beli dan Stok.harga_jual jika null atau 0, ambil dari obat_satuan
+        $stokList = DB::table('stok')->get();
+
+        foreach ($stokList as $stok) {
+            if (
+                (is_null($stok->harga_beli) || $stok->harga_beli == 0) ||
+                (is_null($stok->harga_jual) || $stok->harga_jual == 0)
+            ) {
+                $obatSatuan = DB::table('obat_satuan')->where('id', $stok->obat_satuan_id)->first();
+                if ($obatSatuan) {
+                    $updateData = [];
+                    if (is_null($stok->harga_beli) || $stok->harga_beli == 0) {
+                        $updateData['harga_beli'] = $obatSatuan->harga_beli;
+                    }
+                    if (is_null($stok->harga_jual) || $stok->harga_jual == 0) {
+                        $updateData['harga_jual'] = $obatSatuan->harga_jual;
+                    }
+                    if (!empty($updateData)) {
+                        DB::table('stok')->where('id', $stok->id)->update($updateData);
+                    }
+                }
+            }
+        }
     }
 }
