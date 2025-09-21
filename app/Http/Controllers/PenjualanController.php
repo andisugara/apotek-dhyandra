@@ -234,13 +234,20 @@ class PenjualanController extends Controller
 
             // Cek apakah perlu cetak struk atau faktur
             if ($request->has('cetak_format') && $request->cetak_format !== 'none') {
-                // Redirect ke halaman print dengan format yang dipilih
-                return redirect()->route('penjualan.print', [
+                // Sediakan URL print untuk dibuka di tab baru via JavaScript
+                $printUrl = route('penjualan.print', [
                     'id' => $penjualan->id,
                     'format' => $request->cetak_format
                 ]);
+
+                // Redirect ke form create dengan parameter print_url untuk dibuka via JavaScript
+                return redirect()->route('penjualan.create')
+                    ->with('success', 'Transaksi berhasil disimpan dan dicetak')
+                    ->with('print_url', $printUrl);
             } else {
-                return redirect()->route('penjualan.index')->with('success', 'Transaksi penjualan berhasil ditambahkan');
+                // Redirect kembali ke form create untuk transaksi baru
+                return redirect()->route('penjualan.create')
+                    ->with('success', 'Transaksi penjualan berhasil ditambahkan');
             }
         } catch (\Exception $e) {
             DB::rollBack();

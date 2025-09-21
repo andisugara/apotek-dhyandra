@@ -20,6 +20,13 @@
                 </div>
             @endif
 
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <form id="penjualanForm" action="{{ route('penjualan.store') }}" method="POST">
                 @csrf
 
@@ -1037,5 +1044,15 @@
                 return '-';
             }
         }
+
+        // Handle print URL if available from session
+        @if (session('print_url'))
+            // Open the print URL in a new tab
+            window.addEventListener('DOMContentLoaded', (event) => {
+                setTimeout(() => {
+                    window.open("{{ session('print_url') }}", '_blank');
+                }, 500);
+            });
+        @endif
     </script>
 @endpush
