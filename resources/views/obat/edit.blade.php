@@ -526,6 +526,8 @@
                 'qty' => $stokItem->qty,
                 'qty_awal' => $stokItem->qty_awal ?? $stokItem->qty, // Use qty if qty_awal is null
                 'pembelian_detail_id' => $stokItem->pembelian_detail_id,
+                'harga_beli' => $stokItem->harga_beli,
+                'harga_jual' => $stokItem->harga_jual,
             ];
         })) !!}
     </script>
@@ -1196,11 +1198,11 @@
                 $('#obatForm').append(`<input type="hidden" name="${prefix}[qty]" value="${stok.qty}">`);
                 $('#obatForm').append(
                     `<input type="hidden" name="${prefix}[qty_awal]" value="${stok.qty_awal || stok.qty}">`);
-                // Add price fields
+                // Add price fields - ensure we use actual values without defaulting to 0
                 $('#obatForm').append(
-                    `<input type="hidden" name="${prefix}[harga_beli]" value="${stok.harga_beli || 0}">`);
+                    `<input type="hidden" name="${prefix}[harga_beli]" value="${stok.harga_beli}">`);
                 $('#obatForm').append(
-                    `<input type="hidden" name="${prefix}[harga_jual]" value="${stok.harga_jual || 0}">`);
+                    `<input type="hidden" name="${prefix}[harga_jual]" value="${stok.harga_jual}">`);
             });
 
             // Add hidden inputs for stocks to delete
