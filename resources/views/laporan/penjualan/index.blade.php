@@ -22,6 +22,45 @@
             transform: translateY(-5px);
             box-shadow: 0 1rem 3rem 1rem rgba(0, 0, 0, 0.1);
         }
+
+        td.dt-control {
+            background: url('{{ asset('assets/media/icons/plus.png') }}') no-repeat center center;
+            background-size: 20px;
+            cursor: pointer;
+        }
+
+        tr.shown td.dt-control {
+            background: url('{{ asset('assets/media/icons/minus.png') }}') no-repeat center center;
+            background-size: 20px;
+        }
+
+        .child-table {
+            width: 100%;
+            margin: 10px 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .child-table th,
+        .child-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #E4E6EF;
+        }
+
+        .child-table thead th {
+            background-color: #F5F8FA;
+            font-weight: 600;
+            color: #3F4254;
+        }
+
+        .child-table tbody tr:hover {
+            background-color: #F9F9F9;
+        }
+
+        .detail-row {
+            background-color: #F5F8FA;
+            padding: 15px;
+        }
     </style>
 @endsection
 
@@ -43,19 +82,33 @@
             <!--begin::Filter form-->
             <form action="{{ route('laporan.penjualan.index') }}" method="GET" id="filter-form" class="mb-8">
                 <div class="row mb-5">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label class="form-label">Tanggal Awal</label>
                             <input type="date" class="form-control" name="start_date" value="{{ $startDate }}" />
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label class="form-label">Tanggal Akhir</label>
                             <input type="date" class="form-control" name="end_date" value="{{ $endDate }}" />
                         </div>
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">Jenis Pembayaran</label>
+                            <select class="form-select" name="jenis_pembayaran">
+                                <option value="" {{ !isset($jenisPembayaran) ? 'selected' : '' }}>Semua</option>
+                                <option value="TUNAI"
+                                    {{ isset($jenisPembayaran) && $jenisPembayaran == 'TUNAI' ? 'selected' : '' }}>Tunai
+                                </option>
+                                <option value="NON_TUNAI"
+                                    {{ isset($jenisPembayaran) && $jenisPembayaran == 'NON_TUNAI' ? 'selected' : '' }}>Non
+                                    Tunai</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-3">
                             <i class="ki-duotone ki-filter fs-2">
                                 <span class="path1"></span>
@@ -64,7 +117,7 @@
                             Filter
                         </button>
 
-                        <a href="{{ route('laporan.penjualan.pdf', ['start_date' => $startDate, 'end_date' => $endDate]) }}"
+                        <a href="{{ route('laporan.penjualan.pdf', ['start_date' => $startDate, 'end_date' => $endDate, 'jenis_pembayaran' => $jenisPembayaran ?? '']) }}"
                             class="btn btn-danger" target="_blank">
                             <i class="ki-duotone ki-file-down fs-2">
                                 <span class="path1"></span>
@@ -167,17 +220,18 @@
                 <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4" id="penjualan_table">
                     <thead>
                         <tr class="fw-bold text-muted bg-light">
+                            <th></th>
                             <th>No</th>
                             <th>No. Faktur</th>
                             <th>Tanggal</th>
-                            <th>Nama Obat</th>
-                            <th>Satuan</th>
-                            <th>Harga Beli</th>
-                            <th>Harga Jual</th>
-                            <th>Jumlah</th>
+                            <th>Pasien</th>
+                            <th>Jenis</th>
+                            <th>Subtotal</th>
                             <th>Diskon</th>
                             <th>PPN</th>
-                            <th>Total</th>
+                            <th>Tuslah</th>
+                            <th>Embalase</th>
+                            <th>Grand Total</th>
                             <th>Keuntungan</th>
                         </tr>
                     </thead>
@@ -196,20 +250,87 @@
 @push('scripts')
     <script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
     <script>
+        /* Formatting function for row details */
+        function formatDetailRow(details) {
+
+
+            let html = '<div class="p-4">' +
+                '<h5 class="mb-3">Detail Penjualan</h5>' +
+                '<table class="child-table table table-row-bordered table-striped">' +
+                '<thead class="fw-bold bg-light">' +
+                '<tr>' +
+                '<th>Nama Obat</th>' +
+                '<th>Satuan</th>' +
+                '<th>Batch</th>' +
+                '<th>Exp. Date</th>' +
+                '<th>Harga Beli</th>' +
+                '<th>Harga Jual</th>' +
+                '<th>Jumlah</th>' +
+                '<th>Diskon</th>' +
+                '<th>PPN</th>' +
+                '<th>Tuslah</th>' +
+                '<th>Embalase</th>' +
+                '<th>Total</th>' +
+                '<th>Profit</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>';
+
+            // Check if details is an array and has items
+            if (!Array.isArray(details) || details.length === 0) {
+                html += '<tr><td colspan="13" class="text-center p-5">Tidak ada detail penjualan ditemukan</td></tr>';
+            } else {
+                details.forEach(function(item) {
+                    const keuntunganClass = parseFloat(item.keuntungan) >= 0 ? 'text-success' : 'text-danger';
+
+                    html += '<tr>' +
+                        '<td>' + (item.nama_obat || '-') + '</td>' +
+                        '<td>' + (item.satuan || '-') + '</td>' +
+                        '<td>' + (item.no_batch || '-') + '</td>' +
+                        '<td>' + (item.tanggal_expired ? new Date(item.tanggal_expired).toLocaleDateString(
+                            'id-ID') : '-') + '</td>' +
+                        '<td>Rp ' + formatNumber(item.harga_beli || 0) + '</td>' +
+                        '<td>Rp ' + formatNumber(item.harga || 0) + '</td>' +
+                        '<td>' + (item.jumlah || 0) + '</td>' +
+                        '<td>Rp ' + formatNumber(item.diskon || 0) + '</td>' +
+                        '<td>Rp ' + formatNumber(item.ppn || 0) + '</td>' +
+                        '<td>Rp ' + formatNumber(item.tuslah || 0) + '</td>' +
+                        '<td>Rp ' + formatNumber(item.embalase || 0) + '</td>' +
+                        '<td>Rp ' + formatNumber(item.total || 0) + '</td>' +
+                        '<td class="' + keuntunganClass + '">Rp ' + formatNumber(item.keuntungan || 0) + '</td>' +
+                        '</tr>';
+                });
+            }
+
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function formatNumber(number) {
+            return new Intl.NumberFormat('id-ID').format(number);
+        }
+
         $(document).ready(function() {
-            // Initialize DataTable
+            // Initialize DataTable with expandable rows
             var table = $('#penjualan_table').DataTable({
                 processing: true,
                 serverSide: true,
-
                 ajax: {
                     url: "{{ route('laporan.penjualan.index') }}",
                     data: function(d) {
                         d.start_date = $('input[name="start_date"]').val();
                         d.end_date = $('input[name="end_date"]').val();
+                        d.jenis_pembayaran = $('select[name="jenis_pembayaran"]').val();
                     }
                 },
                 columns: [{
+                        className: 'dt-control',
+                        orderable: false,
+                        searchable: false,
+                        data: null,
+                        defaultContent: ''
+                    },
+                    {
                         data: 'DT_RowIndex',
                         name: 'DT_RowIndex',
                         searchable: false,
@@ -224,50 +345,53 @@
                         name: 'penjualans.tanggal_penjualan'
                     },
                     {
-                        data: 'nama_obat',
-                        name: 'obat.nama_obat'
+                        data: 'pasien',
+                        name: 'pasiens.nama',
+                        searchable: true
                     },
                     {
-                        data: 'satuan',
-                        name: 'satuan.nama'
+                        data: 'jenis_formatted',
+                        name: 'penjualans.jenis',
+                        searchable: true
                     },
                     {
-                        data: 'harga_beli_formatted',
-                        name: 'penjualan_details.harga_beli',
+                        data: 'subtotal_formatted',
+                        name: 'penjualans.subtotal',
                         searchable: false
-                    },
-                    {
-                        data: 'harga_jual_formatted',
-                        name: 'penjualan_details.harga',
-                        searchable: false
-                    },
-                    {
-                        data: 'jumlah',
-                        name: 'penjualan_details.jumlah'
                     },
                     {
                         data: 'diskon_formatted',
-                        name: 'penjualan_details.diskon',
+                        name: 'penjualans.diskon_total',
                         searchable: false
                     },
                     {
                         data: 'ppn_formatted',
-                        name: 'penjualan_details.ppn',
+                        name: 'penjualans.ppn_total',
                         searchable: false
                     },
                     {
-                        data: 'total_formatted',
-                        name: 'penjualan_details.total',
+                        data: 'tuslah_formatted',
+                        name: 'penjualans.tuslah_total',
+                        searchable: false
+                    },
+                    {
+                        data: 'embalase_formatted',
+                        name: 'penjualans.embalase_total',
+                        searchable: false
+                    },
+                    {
+                        data: 'grand_total_formatted',
+                        name: 'penjualans.grand_total',
                         searchable: false
                     },
                     {
                         data: 'keuntungan_formatted',
-                        name: 'keuntungan',
+                        name: 'total_keuntungan',
                         searchable: false
                     }
                 ],
                 order: [
-                    [2, 'desc']
+                    [3, 'desc']
                 ], // Default sort by tanggal
                 language: {
                     zeroRecords: "Tidak ada data yang ditemukan",
@@ -283,6 +407,64 @@
                     }
                 }
             });
+
+            // Add event listener for opening and closing details
+            $('#penjualan_table tbody').on('click', 'td.dt-control', function() {
+                var tr = $(this).closest('tr');
+                var row = table.row(tr);
+
+
+
+
+                if (row.child.isShown()) {
+                    // This row is already open - close it
+                    row.child.hide();
+                    tr.removeClass('shown');
+                } else {
+                    // Close all other open rows first
+                    table.rows().every(function() {
+                        if (this.child.isShown()) {
+                            this.child.hide();
+                            $(this.node()).removeClass('shown');
+                        }
+                    });
+
+                    // Show loading indicator
+                    row.child(
+                        '<div class="text-center py-4"><i class="fa fa-spinner fa-spin"></i> Loading details...</div>'
+                    ).show();
+                    tr.addClass('shown');
+
+                    // Fix the URL by replacing &amp; with & if present
+                    let detailsUrl = row.data().details_url;
+                    if (detailsUrl && detailsUrl.includes('&amp;')) {
+                        detailsUrl = detailsUrl.replace(/&amp;/g, '&');
+
+                    }
+
+                    // Open this row and fetch details via AJAX
+                    $.ajax({
+                        url: detailsUrl,
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(details) {
+
+                            row.child(formatDetailRow(details)).show();
+                            // Ensure we keep the shown class
+                            tr.addClass('shown');
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error loading details:', error, xhr.responseText);
+
+                            row.child(
+                                    '<div class="text-center py-4 text-danger">Error loading details: ' +
+                                    error + '</div>')
+                                .show();
+                        }
+                    });
+                }
+            });
+
             const filterSearch = document.querySelector('[data-kt-docs-table-filter="search"]');
             filterSearch.addEventListener('keyup', function(e) {
                 table.search(e.target.value).draw();
@@ -299,6 +481,7 @@
                     data: {
                         start_date: $('input[name="start_date"]').val(),
                         end_date: $('input[name="end_date"]').val(),
+                        jenis_pembayaran: $('select[name="jenis_pembayaran"]').val(),
                         _token: "{{ csrf_token() }}",
                         summary_only: true
                     },
@@ -316,10 +499,6 @@
                     }
                 });
             });
-
-            function formatNumber(number) {
-                return new Intl.NumberFormat('id-ID').format(number);
-            }
         });
     </script>
 @endpush

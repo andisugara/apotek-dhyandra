@@ -101,7 +101,11 @@
 
         <h1>LAPORAN PENJUALAN</h1>
         <h2>Periode: {{ \Carbon\Carbon::parse($startDate)->format('d M Y') }} -
-            {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}</h2>
+            {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}
+            @if (isset($jenisPembayaran) && $jenisPembayaran)
+                <br>Jenis Pembayaran: {{ $jenisPembayaran }}
+            @endif
+        </h2>
 
         <table>
             <thead>
