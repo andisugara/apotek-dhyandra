@@ -293,14 +293,14 @@ class PenjualanController extends Controller
             ]);
         } else {
             // Set custom paper size for thermal printer (58mm width)
-            // 58mm = ~210 points (72 points per inch), width for standard 58mm thermal paper
-            // The height is set large enough to accommodate the entire content
-            $customPaper = array(0, 0, 210, 800);
+            // Lebarkan sedikit: 80mm = ~302 points (72 points per inch)
+            // Tinggi tetap cukup besar untuk seluruh konten
+            $customPaper = array(0, 0, 302, 800);
 
-            // Generate PDF with the custom paper size using the Pdf facade
+            // Generate PDF dengan ukuran kertas custom (80mm thermal)
             $pdf = Pdf::setPaper($customPaper, 'portrait');
 
-            // Configure DomPDF options for better thermal printing results
+            // Konfigurasi DomPDF untuk hasil thermal lebih baik
             $pdf->setOption('defaultFont', 'sans-serif');
             $pdf->setOption('isRemoteEnabled', true);
             $pdf->setOption('isHtml5ParserEnabled', true);
@@ -308,9 +308,9 @@ class PenjualanController extends Controller
 
             $pdf->loadView('penjualan.print', compact('penjualan', 'setting'));
 
-            // Return the PDF as a download with a filename based on invoice number
+            // Return PDF sebagai stream (buka di browser)
             return $pdf->stream("struk-{$penjualan->no_faktur}.pdf", [
-                'Attachment' => false // Set to false to open in browser
+                'Attachment' => false
             ]);
         }
     }

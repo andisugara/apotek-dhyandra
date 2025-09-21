@@ -125,6 +125,10 @@ Route::middleware(['auth'])->group(function () {
     // laporan stok obat
     Route::get('laporan/stok-obat', [\App\Http\Controllers\LaporanStokObatController::class, 'index'])->name('laporan.stok-obat.index');
 
+    // laporan stok expired
+    Route::get('laporan/stok-expired', [\App\Http\Controllers\LaporanStokExpiredController::class, 'index'])->name('laporan.stok_expired.index');
+    Route::get('laporan/stok-expired/export/pdf', [\App\Http\Controllers\LaporanStokExpiredController::class, 'exportPdf'])->name('laporan.stok_expired.export.pdf');
+
     // Stock Opname - Note: specific routes must come BEFORE the resource route
     Route::get('stock_opname/search-obat', [StockOpnameController::class, 'searchObat'])->name('stock_opname.search_obat');
     Route::get('stock_opname/get-stok-detail', [StockOpnameController::class, 'getStokDetail'])->name('stock_opname.get_stok_detail');

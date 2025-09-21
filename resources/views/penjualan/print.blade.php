@@ -174,9 +174,9 @@
     <body>
         <div class="receipt">
             <div class="header">
-                @if ($setting->logo)
+                {{-- @if ($setting->logo)
                     <img src="{{ asset($setting->logo) }}" alt="Logo" class="logo">
-                @endif
+                @endif --}}
                 <div class="title">{{ $setting->nama_apotek }}</div>
                 <div class="address">{{ $setting->alamat }}</div>
                 <div class="address">Telp: {{ $setting->telepon }}</div>
