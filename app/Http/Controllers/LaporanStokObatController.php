@@ -35,7 +35,7 @@ class LaporanStokObatController extends Controller
                 })
                 ->editColumn('stok', function ($row) {
                     // Jumlahkan qty dari semua stok yang terkait dengan ObatSatuan ini
-                    return $row->stok;
+                    return $row->stok->sum('qty') ?? 0;
                 })
                 ->editColumn('status', function ($row) {
                     if (isset($row->obat->is_active)) {
