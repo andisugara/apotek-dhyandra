@@ -360,7 +360,7 @@
 
                     // Fetch satuan data
                     $.ajax({
-                        url: `/pembelian/obat/${obatId}/satuans`,
+                        url: `/pembelian/obat-satuans/${obatId}`,
                         method: 'GET',
                         success: function(response) {
                             // Create options

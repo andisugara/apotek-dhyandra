@@ -78,7 +78,7 @@
                 rules: {
                     file: {
                         required: true,
-                        extension: "xlsx"
+                        extension: "xlsx|xls"
                     }
                 },
                 messages: {
