@@ -13,6 +13,7 @@ class Stok extends Model
 
     protected $fillable = [
         'obat_id',
+        'obat_satuan_id',
         'satuan_id',
         'lokasi_id',
         'no_batch',
@@ -49,8 +50,7 @@ class Stok extends Model
 
     public function obatSatuan()
     {
-        return $this->belongsTo(ObatSatuan::class, 'satuan_id', 'satuan_id')
-            ->where('obat_id', $this->obat_id);
+        return $this->belongsTo(ObatSatuan::class, 'obat_satuan_id', 'id');
     }
 
     // Check if stock is expired

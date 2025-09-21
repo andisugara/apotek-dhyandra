@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ObatSatuan;
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
 use App\Models\ReturPenjualan;
@@ -345,10 +346,15 @@ class ReturPenjualanController extends Controller
                     'lokasi_id' => $detail['lokasi_id']
                 ]);
 
+                // Get the ObatSatuan record for this obat and satuan
+                $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
+                    ->where('satuan_id', $detail['satuan_id'])
+                    ->first();
+
                 // Update stock - add the quantity back to stock
                 // First, try to find existing stock record with the same batch
                 $stok = Stok::where('obat_id', $detail['obat_id'])
-                    ->where('satuan_id', $detail['satuan_id'])
+                    ->where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
                     ->where('lokasi_id', $detail['lokasi_id'])
                     ->where('no_batch', $penjualanDetail->no_batch)
                     ->first();
@@ -362,6 +368,7 @@ class ReturPenjualanController extends Controller
                     Stok::create([
                         'obat_id' => $detail['obat_id'],
                         'satuan_id' => $detail['satuan_id'],
+                        'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null, // Set obat_satuan_id
                         'lokasi_id' => $detail['lokasi_id'],
                         'no_batch' => $penjualanDetail->no_batch,
                         'tanggal_expired' => $penjualanDetail->tanggal_expired,
@@ -448,8 +455,12 @@ class ReturPenjualanController extends Controller
         try {
             // Reduce stock quantities
             foreach ($returPenjualan->details as $detail) {
-                $stok = Stok::where('obat_id', $detail->obat_id)
+                // Get the ObatSatuan record for this obat and satuan
+                $obatSatuan = ObatSatuan::where('obat_id', $detail->obat_id)
                     ->where('satuan_id', $detail->satuan_id)
+                    ->first();
+
+                $stok = Stok::where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
                     ->where('lokasi_id', $detail->lokasi_id)
                     ->where('no_batch', $detail->no_batch)
                     ->first();

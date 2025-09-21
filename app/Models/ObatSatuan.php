@@ -41,8 +41,7 @@ class ObatSatuan extends Model
 
     public function stok()
     {
-        return $this->hasMany(Stok::class, 'satuan_id', 'satuan_id')
-            ->where('obat_id', $this->obat_id);
+        return $this->hasMany(Stok::class, 'obat_satuan_id', 'id');
     }
 
     // Get harga beli after discount

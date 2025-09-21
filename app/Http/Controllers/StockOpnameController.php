@@ -356,8 +356,7 @@ class StockOpnameController extends Controller
                 if (!$obatSatuan->satuan) continue;
 
                 // Calculate total stock for this medicine and unit regardless of location
-                $totalStok = Stok::where('obat_id', $obat_id)
-                    ->where('satuan_id', $obatSatuan->satuan_id)
+                $totalStok = Stok::where('obat_satuan_id', $obatSatuan->id)
                     ->sum('qty');
 
                 // Ensure stock is not null

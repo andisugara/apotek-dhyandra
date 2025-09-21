@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Akun;
 use App\Models\Obat;
+use App\Models\ObatSatuan;
 use App\Models\Pasien;
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
@@ -159,10 +160,15 @@ class PenjualanController extends Controller
                     'lokasi_id' => $detail['lokasi_id']
                 ]);
 
-                // Update stock - mencari berdasarkan no_batch, obat_id, DAN satuan_id
-                $stok = Stok::where('no_batch', $detail['no_batch'])
-                    ->where('obat_id', $detail['obat_id'])
+                // Get the ObatSatuan record for this obat and satuan
+                $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
                     ->where('satuan_id', $detail['satuan_id'])
+                    ->first();
+
+                // Update stock - mencari berdasarkan no_batch dan obat_satuan_id
+                $stok = Stok::where('no_batch', $detail['no_batch'])
+                    ->where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
+                    ->where('lokasi_id', $detail['lokasi_id'])
                     ->first();
 
                 if ($stok) {
@@ -458,9 +464,13 @@ class PenjualanController extends Controller
             $satuanId = $request->get('satuan_id');
         }
 
+        // Get the ObatSatuan record for this obat and satuan
+        $obatSatuan = ObatSatuan::where('obat_id', $obatId)
+            ->where('satuan_id', $satuanId)
+            ->first();
+
         // Get the first stock item (FIFO) for this obat and satuan
-        $firstStock = Stok::where('obat_id', $obatId)
-            ->where('satuan_id', $satuanId) // Selalu filter berdasarkan satuan_id
+        $firstStock = Stok::where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
             ->where('qty', '>', 0)
             ->with([
                 'obat',
@@ -523,10 +533,15 @@ class PenjualanController extends Controller
 
             // Process each penjualan detail and return items to stock
             foreach ($penjualan->details as $detail) {
-                // Try to find existing stock with the same batch number, obat, and satuan
-                $stok = Stok::where('no_batch', $detail->no_batch)
-                    ->where('obat_id', $detail->obat_id)
+                // Get the ObatSatuan record for this obat and satuan
+                $obatSatuan = ObatSatuan::where('obat_id', $detail->obat_id)
                     ->where('satuan_id', $detail->satuan_id)
+                    ->first();
+
+                // Try to find existing stock with the same batch number and obat_satuan_id
+                $stok = Stok::where('no_batch', $detail->no_batch)
+                    ->where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
+                    ->where('lokasi_id', $detail->lokasi_id)
                     ->first();
 
                 if ($stok) {
@@ -540,6 +555,7 @@ class PenjualanController extends Controller
                     $newStock = new Stok([
                         'obat_id' => $detail->obat_id,
                         'satuan_id' => $detail->satuan_id,
+                        'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null,
                         'lokasi_id' => $detail->lokasi_id,
                         'no_batch' => $detail->no_batch,
                         'tanggal_expired' => $detail->tanggal_expired,

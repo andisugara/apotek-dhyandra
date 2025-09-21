@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ObatSatuan;
 use App\Models\Pembelian;
 use App\Models\PembelianDetail;
 use App\Models\ReturPembelian;
@@ -402,9 +403,15 @@ class ReturPembelianController extends Controller
                     'lokasi_id' => $detail['lokasi_id']
                 ]);
 
+                // Get the ObatSatuan record for this obat and satuan
+                $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
+                    ->where('satuan_id', $detail['satuan_id'])
+                    ->first();
+
                 // Update stock - reduce the quantity from the specific batch
-                $stok = Stok::where('pembelian_detail_id', $pembelianDetail->id)
+                $stok = Stok::where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
                     ->where('no_batch', $detail['no_batch'])
+                    ->where('lokasi_id', $detail['lokasi_id'])
                     ->first();
 
                 if ($stok) {
@@ -485,8 +492,14 @@ class ReturPembelianController extends Controller
         try {
             // Restore stock quantities
             foreach ($returPembelian->details as $detail) {
-                $stok = Stok::where('pembelian_detail_id', $detail->pembelian_detail_id)
+                // Get the ObatSatuan record for this obat and satuan
+                $obatSatuan = ObatSatuan::where('obat_id', $detail->obat_id)
+                    ->where('satuan_id', $detail->satuan_id)
+                    ->first();
+
+                $stok = Stok::where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
                     ->where('no_batch', $detail->no_batch)
+                    ->where('lokasi_id', $detail->lokasi_id)
                     ->first();
 
                 if ($stok) {

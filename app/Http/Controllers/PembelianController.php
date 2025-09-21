@@ -171,6 +171,7 @@ class PembelianController extends Controller
             $diskonTotal = 0;
             $grandTotal = 0;
 
+
             // Process detail items
             foreach ($validated['detail'] as $detail) {
                 // Calculate values
@@ -203,10 +204,15 @@ class PembelianController extends Controller
                 $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
                 $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
 
+                $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
+                    ->where('satuan_id', $detail['satuan_id'])
+                    ->first();
+
                 // Create detail record
                 $pembelianDetail = PembelianDetail::create([
                     'pembelian_id' => $pembelian->id,
                     'obat_id' => $detail['obat_id'],
+                    'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null,
                     'satuan_id' => $detail['satuan_id'],
                     'jumlah' => $jumlah,
                     'harga_beli' => $hargaBeli,
@@ -239,6 +245,7 @@ class PembelianController extends Controller
                 Stok::create([
                     'obat_id' => $detail['obat_id'],
                     'satuan_id' => $detail['satuan_id'],
+                    'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null, // Set obat_satuan_id
                     'lokasi_id' => $detail['lokasi_id'],
                     'no_batch' => $detail['no_batch'],
                     'tanggal_expired' => $detail['tanggal_expired'],
@@ -248,11 +255,6 @@ class PembelianController extends Controller
                     'harga_beli' => $hppPerUnit, // Menggunakan HPP sebagai harga beli
                     'harga_jual' => $hargaJualPerUnit
                 ]);
-
-                // Update obat satuan with new price if needed
-                $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
-                    ->where('satuan_id', $detail['satuan_id'])
-                    ->first();
 
                 if ($obatSatuan) {
                     $obatSatuan->update([
@@ -398,7 +400,6 @@ class PembelianController extends Controller
             $subtotal = 0;
             $diskonTotal = 0;
             $grandTotal = 0;
-
             // Process detail items
             foreach ($validated['detail'] as $detail) {
                 // Calculate values
@@ -419,6 +420,8 @@ class PembelianController extends Controller
                 $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
                 $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
 
+
+
                 // Create or update detail record
                 if (isset($detail['id']) && $detail['id']) {
                     $pembelianDetail = PembelianDetail::find($detail['id']);
@@ -435,12 +438,16 @@ class PembelianController extends Controller
                         $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
                         $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
 
+                        $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
+                            ->where('satuan_id', $detail['satuan_id'])
+                            ->first();
                         // Update existing detail
                         $pembelianDetail->update([
                             'obat_id' => $detail['obat_id'],
+                            'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null,
                             'satuan_id' => $detail['satuan_id'],
                             'jumlah' => $jumlah,
-                            'harga_beli' => $hppPerUnit,
+                            'harga_beli' => $hargaBeli,
                             'subtotal' => $subtotalItem,
                             'diskon_persen' => $diskonPersen,
                             'diskon_nominal' => $diskonNominal,
@@ -470,6 +477,7 @@ class PembelianController extends Controller
 
                             $stok->update([
                                 'obat_id' => $detail['obat_id'],
+                                'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null, // Set obat_satuan_id
                                 'satuan_id' => $detail['satuan_id'],
                                 'lokasi_id' => $detail['lokasi_id'],
                                 'no_batch' => $detail['no_batch'],
@@ -496,13 +504,18 @@ class PembelianController extends Controller
                     $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
                     $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
 
+
+                    $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
+                        ->where('satuan_id', $detail['satuan_id'])
+                        ->first();
                     // Create new detail
                     $pembelianDetail = PembelianDetail::create([
                         'pembelian_id' => $pembelian->id,
                         'obat_id' => $detail['obat_id'],
+                        'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null,
                         'satuan_id' => $detail['satuan_id'],
                         'jumlah' => $jumlah,
-                        'harga_beli' => $hppPerUnit,
+                        'harga_beli' => $hargaBeli,
                         'subtotal' => $subtotalItem,
                         'diskon_persen' => $diskonPersen,
                         'diskon_nominal' => $diskonNominal,
@@ -527,10 +540,12 @@ class PembelianController extends Controller
                     $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
                     $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
 
+
                     // Create new stock
                     Stok::create([
                         'obat_id' => $detail['obat_id'],
                         'satuan_id' => $detail['satuan_id'],
+                        'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null, // Set obat_satuan_id
                         'lokasi_id' => $detail['lokasi_id'],
                         'no_batch' => $detail['no_batch'],
                         'tanggal_expired' => $detail['tanggal_expired'],
@@ -543,11 +558,6 @@ class PembelianController extends Controller
 
                     $updatedDetailIds[] = $pembelianDetail->id;
                 }
-
-                // Update obat satuan with new price if needed
-                $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
-                    ->where('satuan_id', $detail['satuan_id'])
-                    ->first();
 
                 if ($obatSatuan) {
                     $obatSatuan->update([

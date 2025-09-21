@@ -139,24 +139,27 @@ class ObatController extends Controller
             if ($request->has('stok') && is_array($request->stok)) {
                 foreach ($request->stok as $stok) {
                     if (!empty($stok['satuan_id']) && !empty($stok['lokasi_id'])) {
-                        // Check if the satuan exists for this obat
-                        $satuanExists = ObatSatuan::where('obat_id', $obat->id)
+                        // Get the ObatSatuan record for this obat and satuan
+                        $obatSatuan = ObatSatuan::where('obat_id', $obat->id)
                             ->where('satuan_id', $stok['satuan_id'])
-                            ->exists();
+                            ->first();
 
-                        if ($satuanExists) {
+                        if ($obatSatuan) {
                             // Get the initial quantity value
                             $qty = $stok['qty'] ?? 0;
 
                             Stok::create([
                                 'obat_id' => $obat->id,
                                 'satuan_id' => $stok['satuan_id'],
+                                'obat_satuan_id' => $obatSatuan->id, // Set obat_satuan_id
                                 'lokasi_id' => $stok['lokasi_id'],
                                 'no_batch' => $stok['no_batch'],
                                 'tanggal_expired' => $stok['tanggal_expired'],
                                 'qty' => $qty,
                                 'qty_awal' => $qty, // Set qty_awal to the same as qty initially
                                 'pembelian_detail_id' => $stok['pembelian_detail_id'] ?? null,
+                                'harga_beli' => $obatSatuan->harga_beli,
+                                'harga_jual' => $obatSatuan->harga_jual,
                             ]);
                         }
                     }
@@ -276,13 +279,7 @@ class ObatController extends Controller
                 $satuansToDelete = array_diff($existingSatuanIds, $updatedSatuanIds);
                 if (!empty($satuansToDelete)) {
                     // Check if any stock depends on these satuans
-                    $hasStock = Stok::where('obat_id', $obat->id)
-                        ->whereIn('satuan_id', function ($query) use ($satuansToDelete) {
-                            $query->select('satuan_id')
-                                ->from('obat_satuan')
-                                ->whereIn('id', $satuansToDelete);
-                        })->exists();
-
+                    $hasStock = Stok::whereIn('obat_satuan_id', $satuansToDelete)->exists();
                     if ($hasStock) {
                         throw new \Exception('Tidak dapat menghapus satuan karena masih memiliki stok');
                     }
@@ -295,21 +292,42 @@ class ObatController extends Controller
             if ($request->has('stok') && is_array($request->stok)) {
                 foreach ($request->stok as $stok) {
                     if (!empty($stok['satuan_id']) && !empty($stok['lokasi_id'])) {
-                        // Check if the satuan exists for this obat
-                        $satuanExists = ObatSatuan::where('obat_id', $obat->id)
+                        // Get the ObatSatuan record for this obat and satuan
+                        $obatSatuan = ObatSatuan::where('obat_id', $obat->id)
                             ->where('satuan_id', $stok['satuan_id'])
-                            ->exists();
+                            ->first();
 
-                        if ($satuanExists) {
+                        if ($obatSatuan) {
                             // Check if this is an existing stock or new one
                             if (isset($stok['id']) && $stok['id']) {
                                 $existingStock = Stok::find($stok['id']);
                                 if ($existingStock) {
                                     $existingStock->update([
+                                        'obat_satuan_id' => $obatSatuan->id, // Update obat_satuan_id
                                         'lokasi_id' => $stok['lokasi_id'],
                                         'no_batch' => $stok['no_batch'],
                                         'tanggal_expired' => $stok['tanggal_expired'],
                                         'qty' => $stok['qty'] ?? $existingStock->qty,
+                                        'qty_awal' => $stok['qty'] ?? $existingStock->qty_awal, // Update qty_awal if qty is changed
+                                        'harga_beli' => $existingStock->harga_beli ?? $obatSatuan->harga_beli,
+                                        'harga_jual' => $existingStock->harga_jual ?? $obatSatuan->harga_jual,
+                                    ]);
+                                } else {
+                                    // If stok ID is provided but not found, create new stock
+                                    $qty = $stok['qty'] ?? 0;
+
+                                    Stok::create([
+                                        'obat_id' => $obat->id,
+                                        'satuan_id' => $stok['satuan_id'],
+                                        'obat_satuan_id' => $obatSatuan->id, // Set obat_satuan_id
+                                        'lokasi_id' => $stok['lokasi_id'],
+                                        'no_batch' => $stok['no_batch'],
+                                        'tanggal_expired' => $stok['tanggal_expired'],
+                                        'qty' => $qty,
+                                        'qty_awal' => $qty, // Set qty_awal to the same as qty initially
+                                        'pembelian_detail_id' => $stok['pembelian_detail_id'] ?? null,
+                                        'harga_beli' => $obatSatuan->harga_beli,
+                                        'harga_jual' => $obatSatuan->harga_jual,
                                     ]);
                                 }
                             } else {
@@ -319,12 +337,15 @@ class ObatController extends Controller
                                 Stok::create([
                                     'obat_id' => $obat->id,
                                     'satuan_id' => $stok['satuan_id'],
+                                    'obat_satuan_id' => $obatSatuan->id, // Set obat_satuan_id
                                     'lokasi_id' => $stok['lokasi_id'],
                                     'no_batch' => $stok['no_batch'],
                                     'tanggal_expired' => $stok['tanggal_expired'],
                                     'qty' => $qty,
                                     'qty_awal' => $qty, // Set qty_awal to the same as qty initially
-                                    'pembelian_detail_id' => $stok['pembelian_detail_id'] ?? null,
+                                    'pembelian_detail_id' => $existingStock->pembelian_detail_id ?? null,
+                                    'harga_beli' => $obatSatuan->harga_beli,
+                                    'harga_jual' => $obatSatuan->harga_jual,
                                 ]);
                             }
                         }
@@ -341,9 +362,7 @@ class ObatController extends Controller
 
                     if ($satuanToDelete) {
                         // Check if any stock depends on this satuan
-                        $hasStock = Stok::where('obat_id', $obat->id)
-                            ->where('satuan_id', $satuanToDelete->satuan_id)
-                            ->exists();
+                        $hasStock = Stok::where('obat_satuan_id', $satuanToDelete->id)->exists();
 
                         if ($hasStock) {
                             throw new \Exception('Tidak dapat menghapus satuan karena masih memiliki stok');
@@ -478,8 +497,7 @@ class ObatController extends Controller
             }
 
             // Check if any stock depends on this satuan
-            $hasStock = Stok::where('obat_id', $id)
-                ->where('satuan_id', $satuanId)
+            $hasStock = Stok::where('obat_satuan_id', $obatSatuan->id)
                 ->exists();
 
             if ($hasStock) {
@@ -515,12 +533,12 @@ class ObatController extends Controller
         try {
             $obat = Obat::findOrFail($id);
 
-            // Check if the satuan exists for this obat
-            $satuanExists = ObatSatuan::where('obat_id', $id)
+            // Get the ObatSatuan record for this obat and satuan
+            $obatSatuan = ObatSatuan::where('obat_id', $id)
                 ->where('satuan_id', $validated['satuan_id'])
-                ->exists();
+                ->first();
 
-            if (!$satuanExists) {
+            if (!$obatSatuan) {
                 return response()->json([
                     'error' => 'Satuan ini belum ditambahkan untuk obat ini, tambahkan satuan terlebih dahulu'
                 ], 400);
@@ -531,6 +549,7 @@ class ObatController extends Controller
             $stok = Stok::create([
                 'obat_id' => $id,
                 'satuan_id' => $validated['satuan_id'],
+                'obat_satuan_id' => $obatSatuan->id, // Set obat_satuan_id
                 'lokasi_id' => $validated['lokasi_id'],
                 'no_batch' => $validated['no_batch'],
                 'tanggal_expired' => $validated['tanggal_expired'],

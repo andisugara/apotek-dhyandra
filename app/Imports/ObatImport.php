@@ -181,9 +181,15 @@ class ObatImport implements ToCollection, WithHeadingRow,  WithBatchInserts, Wit
         // Stok
         $qty = $this->parseInt($qtyRaw); // "3.00" → 3, "3,00" → 3, "-" → 0
         if ($qty > 0) {
+            // Get the ObatSatuan record
+            $obatSatuan = ObatSatuan::where('obat_id', $obat->id)
+                ->where('satuan_id', $satuan->id)
+                ->first();
+
             Stok::create([
                 'obat_id'            => $obat->id,
                 'satuan_id'          => $satuan->id,
+                'obat_satuan_id'     => $obatSatuan ? $obatSatuan->id : null,
                 'lokasi_id'          => $lokasiId,
                 'no_batch'           => '-',                // default
                 'tanggal_expired'    => now()->addYear(),   // default (+1 thn)
