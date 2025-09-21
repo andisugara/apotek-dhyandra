@@ -20,6 +20,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Laporan\LabaRugiController;
 use App\Http\Controllers\LaporanPenjualanController;
+use App\Http\Controllers\LaporanPembelianController;
 use Illuminate\Support\Facades\Route;
 
 // Authentication routes
@@ -121,6 +122,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('laporan/penjualan', [LaporanPenjualanController::class, 'index'])->name('laporan.penjualan.index');
     Route::post('laporan/penjualan/generate', [LaporanPenjualanController::class, 'generate'])->name('laporan.penjualan.generate');
     Route::get('laporan/penjualan/pdf', [LaporanPenjualanController::class, 'exportPdf'])->name('laporan.penjualan.pdf');
+
+    // laporan pembelian
+    Route::get('laporan/pembelian', [App\Http\Controllers\LaporanPembelianController::class, 'index'])->name('laporan.pembelian.index');
+    Route::get('laporan/pembelian/pdf', [App\Http\Controllers\LaporanPembelianController::class, 'exportPdf'])->name('laporan.pembelian.pdf');
 
     // laporan stok obat
     Route::get('laporan/stok-obat', [\App\Http\Controllers\LaporanStokObatController::class, 'index'])->name('laporan.stok-obat.index');
