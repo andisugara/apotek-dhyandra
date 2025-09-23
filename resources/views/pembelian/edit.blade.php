@@ -231,12 +231,9 @@
                                     </td>
                                     <td>
                                         <input type="text"
-                                            class="form-control form-control-sm harga-jual-display text-end"
-                                            value="{{ number_format($detail->harga_jual_per_unit, 0, ',', '.') }}"
-                                            disabled>
-                                        <input type="hidden" class="harga-jual-input"
+                                            class="form-control form-control-sm harga-jual-input text-end"
                                             name="detail[{{ $index }}][harga_jual_per_unit]"
-                                            value="{{ $detail->harga_jual_per_unit }}">
+                                            value="{{ number_format($detail->harga_jual_per_unit, 0, ',', '.') }}">
                                     </td>
                                     <td>
                                         <input type="text" class="form-control form-control-sm"
@@ -406,9 +403,8 @@
                     name="detail[__index__][margin_jual_persen]" value="10" min="0" step="0.01">
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm harga-jual-display text-end" disabled>
-                <input type="hidden" class="harga-jual-input" name="detail[__index__][harga_jual_per_unit]"
-                    value="0">
+                <input type="text" class="form-control form-control-sm harga-jual-input text-end"
+                    name="detail[__index__][harga_jual_per_unit]" value="0">
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm" name="detail[__index__][no_batch]" required>
@@ -504,7 +500,7 @@
 
                     // Fetch satuan data
                     $.ajax({
-                        url: `/pembelian/obat/${obatId}/satuans`,
+                        url: `/pembelian/obat-satuans/${obatId}`,
                         method: 'GET',
                         success: function(response) {
                             // Create options
@@ -546,10 +542,26 @@
                 calculateRowValues(row);
             });
 
+
             // Calculate profit when margin changes
             $(document).on('input', '.margin-jual-input', function() {
                 const row = $(this).closest('tr');
                 calculateRowValues(row);
+            });
+
+            // When harga jual is changed manually, update margin to match
+            $(document).on('input', '.harga-jual-input', function() {
+                const row = $(this).closest('tr');
+                const hppPerUnit = parseFloat(row.find('.hpp-input').val()) || 0;
+                const hargaJual = parseFloat($(this).val().replace(/[^\d]/g, '')) || 0;
+                let marginPersen = 0;
+                if (hppPerUnit > 0) {
+                    marginPersen = ((hargaJual - hppPerUnit) / hppPerUnit) * 100;
+                }
+                row.find('.margin-jual-input').val(marginPersen.toFixed(2));
+                // Optionally, update display formatting
+                $(this).val(formatRupiah(hargaJual));
+                calculateRowValues(row, true); // true = skip updating harga jual from margin
             });
 
             // Calculate PPN when value changes and update HPP for all rows
@@ -621,80 +633,8 @@
                 detailIndex++;
             }
 
-            function calculateRowValues(row) {
-                // Get values
-                const jumlah = parseInt(row.find('.jumlah-input').val()) || 0;
-                const hargaBeli = parseInt(row.find('.harga-beli-input').val().replace(/[^\d]/g, '')) || 0;
-                const diskonPersen = parseFloat(row.find('.diskon-persen-input').val()) || 0;
-                const marginPersen = parseFloat(row.find('.margin-jual-input').val()) || 0;
-                const ppnPersen = parseFloat($('#ppn-total').val()) || 0;
 
-                // Calculate values
-                const subtotal = jumlah * hargaBeli;
-                const diskonNominal = (diskonPersen / 100) * subtotal;
-                const subtotalSetelahDiskon = subtotal - diskonNominal;
-                const ppnNominalPerItem = (ppnPersen / 100) * subtotalSetelahDiskon;
 
-                // HPP per unit (termasuk PPN)
-                const totalDenganPPN = subtotalSetelahDiskon + ppnNominalPerItem;
-                const hppPerUnit = jumlah > 0 ? (subtotalSetelahDiskon + ppnNominalPerItem) / jumlah : 0;
-
-                // Harga jual berdasarkan HPP + margin
-                const marginNominal = (marginPersen / 100) * hppPerUnit;
-                const hargaJual = hppPerUnit + marginNominal;
-
-                // Update displays
-                row.find('.subtotal-item-display').val(formatRupiah(subtotal));
-                row.find('.subtotal-item-input').val(subtotal);
-
-                row.find('.diskon-nominal-display').val(formatRupiah(diskonNominal));
-                row.find('.diskon-nominal-input').val(diskonNominal);
-
-                // Display HPP per unit
-                row.find('.hpp-display').val(formatRupiah(hppPerUnit));
-                row.find('.hpp-input').val(hppPerUnit);
-
-                row.find('.harga-jual-display').val(formatRupiah(hargaJual));
-                row.find('.harga-jual-input').val(hargaJual);
-
-                row.find('.total-item-display').val(formatRupiah(subtotalSetelahDiskon));
-                row.find('.total-item-input').val(subtotalSetelahDiskon);
-
-                // Calculate overall totals
-                calculateTotals();
-            }
-
-            function calculateTotals() {
-                let subtotal = 0;
-                let diskonTotal = 0;
-                let grandTotal = 0;
-
-                // Sum up all rows
-                $('.detail-row').each(function() {
-                    const rowSubtotal = parseInt($(this).find('.subtotal-item-input').val()) || 0;
-                    const rowDiskon = parseInt($(this).find('.diskon-nominal-input').val()) || 0;
-                    const rowTotal = parseInt($(this).find('.total-item-input').val()) || 0;
-
-                    subtotal += rowSubtotal;
-                    diskonTotal += rowDiskon;
-                    grandTotal += rowTotal;
-                });
-
-                // Calculate PPN
-                const ppnPersen = parseFloat($('#ppn-total').val()) || 0;
-                const ppnNominal = (ppnPersen / 100) * (subtotal - diskonTotal);
-                grandTotal += ppnNominal;
-
-                // Update displays
-                $('#subtotal-display').val(formatRupiah(subtotal));
-                $('#subtotal-input').val(subtotal);
-
-                $('#diskon-total-display').val(formatRupiah(diskonTotal));
-                $('#diskon-total-input').val(diskonTotal);
-
-                $('#grand-total-display').val(formatRupiah(grandTotal));
-                $('#grand-total-input').val(grandTotal);
-            }
 
             function updateEmptyRowVisibility() {
                 const hasDetails = $('.detail-row').length > 0;
@@ -707,9 +647,6 @@
 
             // This function is no longer needed as the required properties are set directly in the change event handler
 
-            function formatRupiah(angka) {
-                return new Intl.NumberFormat('id-ID').format(angka);
-            }
 
             function initSelect2() {
                 $('select[data-control="select2"]').select2({
@@ -855,5 +792,95 @@
                 console.log('Detail row validation will be handled by HTML5 validation attributes');
             }
         });
+
+        function calculateRowValues(row) {
+            // Get values
+            const jumlah = parseInt(row.find('.jumlah-input').val()) || 0;
+            const hargaBeli = parseInt(row.find('.harga-beli-input').val().replace(/[^\d]/g, '')) || 0;
+            const diskonPersen = parseFloat(row.find('.diskon-persen-input').val()) || 0;
+            const marginPersen = parseFloat(row.find('.margin-jual-input').val()) || 0;
+            const ppnPersen = parseFloat($('#ppn-total').val()) || 0;
+            const hargaJualInput = row.find('.harga-jual-input').val().replace(/[^\d]/g, '');
+
+            // Calculate values
+            const subtotal = jumlah * hargaBeli;
+            const diskonNominal = (diskonPersen / 100) * subtotal;
+            const subtotalSetelahDiskon = subtotal - diskonNominal;
+            const ppnNominalPerItem = (ppnPersen / 100) * subtotalSetelahDiskon;
+
+            // HPP per unit (termasuk PPN)
+            const totalDenganPPN = subtotalSetelahDiskon + ppnNominalPerItem;
+            const hppPerUnit = jumlah > 0 ? (subtotalSetelahDiskon + ppnNominalPerItem) / jumlah : 0;
+
+            // Harga jual berdasarkan HPP + margin
+            let hargaJual = hppPerUnit + ((marginPersen / 100) * hppPerUnit);
+            // If called from harga_jual manual edit, don't overwrite harga_jual
+            if (arguments.length < 2 || !arguments[1]) {
+                row.find('.harga-jual-input').val(hargaJual > 0 ? formatRupiah(hargaJual.toFixed(0)) : '');
+            } else {
+
+                // If harga_jual was edited, use the current value
+                const manualHargaJual = parseFloat(row.find('.harga-jual-input').val().replace(/[^\d]/g, '')) ||
+                    0;
+                hargaJual = manualHargaJual;
+            }
+
+            // Update displays
+            row.find('.subtotal-item-display').val(formatRupiah(subtotal));
+            row.find('.subtotal-item-input').val(subtotal);
+
+            row.find('.diskon-nominal-display').val(formatRupiah(diskonNominal));
+            row.find('.diskon-nominal-input').val(diskonNominal);
+
+            // Display HPP per unit
+            row.find('.hpp-display').val(formatRupiah(hppPerUnit));
+            row.find('.hpp-input').val(hppPerUnit);
+
+            // Display harga jual (input is now editable)
+            // row.find('.harga-jual-display').val(formatRupiah(hargaJual)); // removed, not needed
+
+            row.find('.total-item-display').val(formatRupiah(subtotalSetelahDiskon));
+            row.find('.total-item-input').val(subtotalSetelahDiskon);
+
+            // Calculate overall totals
+            calculateTotals();
+        }
+
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID').format(angka);
+        }
+
+
+        function calculateTotals() {
+            let subtotal = 0;
+            let diskonTotal = 0;
+            let grandTotal = 0;
+
+            // Sum up all rows
+            $('.detail-row').each(function() {
+                const rowSubtotal = parseInt($(this).find('.subtotal-item-input').val()) || 0;
+                const rowDiskon = parseInt($(this).find('.diskon-nominal-input').val()) || 0;
+                const rowTotal = parseInt($(this).find('.total-item-input').val()) || 0;
+
+                subtotal += rowSubtotal;
+                diskonTotal += rowDiskon;
+                grandTotal += rowTotal;
+            });
+
+            // Calculate PPN
+            const ppnPersen = parseFloat($('#ppn-total').val()) || 0;
+            const ppnNominal = (ppnPersen / 100) * (subtotal - diskonTotal);
+            grandTotal += ppnNominal;
+
+            // Update displays
+            $('#subtotal-display').val(formatRupiah(subtotal));
+            $('#subtotal-input').val(subtotal);
+
+            $('#diskon-total-display').val(formatRupiah(diskonTotal));
+            $('#diskon-total-input').val(diskonTotal);
+
+            $('#grand-total-display').val(formatRupiah(grandTotal));
+            $('#grand-total-input').val(grandTotal);
+        }
     </script>
 @endpush
