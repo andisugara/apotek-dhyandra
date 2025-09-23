@@ -134,6 +134,7 @@ class PembelianController extends Controller
             'detail.*.harga_beli' => 'required|numeric|min:0',
             'detail.*.diskon_persen' => 'nullable|numeric|min:0|max:100',
             'detail.*.margin_jual_persen' => 'nullable|numeric|min:0',
+            'detail.*.harga_jual_per_unit' => 'required|numeric|min:0',
             'detail.*.no_batch' => 'required|string',
             'detail.*.tanggal_expired' => 'required|date|after:today',
             'detail.*.lokasi_id' => 'required|exists:lokasi_obat,id',
@@ -201,8 +202,8 @@ class PembelianController extends Controller
                 $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
 
                 // Hitung ulang harga jual berdasarkan HPP baru
-                $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+                // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
 
                 $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
                     ->where('satuan_id', $detail['satuan_id'])
@@ -238,8 +239,8 @@ class PembelianController extends Controller
                 $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
 
                 // Hitung ulang harga jual berdasarkan HPP baru
-                $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+                // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
 
                 // Create or update stock
                 Stok::create([
@@ -364,6 +365,7 @@ class PembelianController extends Controller
             'detail.*.harga_beli' => 'required|numeric|min:0',
             'detail.*.diskon_persen' => 'nullable|numeric|min:0|max:100',
             'detail.*.margin_jual_persen' => 'nullable|numeric|min:0',
+            'detail.*.harga_jual_per_unit' => 'required|numeric|min:0',
             'detail.*.no_batch' => 'required|string',
             'detail.*.tanggal_expired' => 'required|date|after:today',
             'detail.*.lokasi_id' => 'required|exists:lokasi_obat,id',
@@ -417,8 +419,8 @@ class PembelianController extends Controller
                 $hnaPpnPerUnit = $hargaBeli;
 
                 $marginJualPersen = floatval($detail['margin_jual_persen'] ?? 10);
-                $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+                // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
 
 
 
@@ -435,8 +437,8 @@ class PembelianController extends Controller
                         $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
 
                         // Hitung ulang harga jual berdasarkan HPP baru
-                        $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                        $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+                        // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                        $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
 
                         $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
                             ->where('satuan_id', $detail['satuan_id'])
@@ -472,8 +474,8 @@ class PembelianController extends Controller
                             $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
 
                             // Hitung ulang harga jual berdasarkan HPP baru
-                            $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                            $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+                            // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                            $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
 
                             $stok->update([
                                 'obat_id' => $detail['obat_id'],
@@ -501,8 +503,8 @@ class PembelianController extends Controller
                     $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
 
                     // Hitung ulang harga jual berdasarkan HPP baru
-                    $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                    $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+                    // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                    $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
 
 
                     $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
@@ -537,8 +539,8 @@ class PembelianController extends Controller
                     $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
 
                     // Hitung ulang harga jual berdasarkan HPP baru
-                    $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                    $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
+                    // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                    $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
 
 
                     // Create new stock

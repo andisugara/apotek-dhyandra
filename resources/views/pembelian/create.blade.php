@@ -272,9 +272,8 @@
                     name="detail[__index__][margin_jual_persen]" value="10" min="0" step="0.01">
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm harga-jual-display text-end" disabled>
-                <input type="hidden" class="harga-jual-input" name="detail[__index__][harga_jual_per_unit]"
-                    value="0">
+                <input type="text" class="form-control form-control-sm harga-jual-input text-end"
+                    name="detail[__index__][harga_jual_per_unit]" value="0">
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm" name="detail[__index__][no_batch]" required>
@@ -414,10 +413,26 @@
                 calculateRowValues(row);
             });
 
+
             // Calculate profit when margin changes
             $(document).on('input', '.margin-jual-input', function() {
                 const row = $(this).closest('tr');
                 calculateRowValues(row);
+            });
+
+            // When harga jual is changed manually, update margin to match
+            $(document).on('input', '.harga-jual-input', function() {
+                const row = $(this).closest('tr');
+                const hppPerUnit = parseFloat(row.find('.hpp-input').val()) || 0;
+                const hargaJual = parseFloat($(this).val().replace(/[^\d]/g, '')) || 0;
+                let marginPersen = 0;
+                if (hppPerUnit > 0) {
+                    marginPersen = ((hargaJual - hppPerUnit) / hppPerUnit) * 100;
+                }
+                row.find('.margin-jual-input').val(marginPersen.toFixed(2));
+                // Optionally, update display formatting
+                $(this).val(formatRupiah(hargaJual));
+                calculateRowValues(row, true); // true = skip updating harga jual from margin
             });
 
             // Calculate PPN when value changes and update HPP for all rows
@@ -511,8 +526,17 @@
                 const hppPerUnit = jumlah > 0 ? (subtotalSetelahDiskon + ppnNominalPerItem) / jumlah : 0;
 
                 // Harga jual berdasarkan HPP + margin
-                const marginNominal = (marginPersen / 100) * hppPerUnit;
-                const hargaJual = hppPerUnit + marginNominal;
+                let hargaJual = hppPerUnit + ((marginPersen / 100) * hppPerUnit);
+
+                // If called from harga_jual manual edit, don't overwrite harga_jual
+                if (arguments.length < 2 || !arguments[1]) {
+                    row.find('.harga-jual-input').val(hargaJual > 0 ? formatRupiah(hargaJual) : '');
+                } else {
+                    // If harga_jual was edited, use the current value
+                    const manualHargaJual = parseFloat(row.find('.harga-jual-input').val().replace(/[^\d]/g, '')) ||
+                        0;
+                    hargaJual = manualHargaJual;
+                }
 
                 // Update displays
                 row.find('.subtotal-item-display').val(formatRupiah(subtotal));
@@ -525,9 +549,8 @@
                 row.find('.hpp-display').val(formatRupiah(hppPerUnit));
                 row.find('.hpp-input').val(hppPerUnit);
 
-                // Display harga jual
-                row.find('.harga-jual-display').val(formatRupiah(hargaJual));
-                row.find('.harga-jual-input').val(hargaJual);
+                // Display harga jual (input is now editable)
+                // row.find('.harga-jual-display').val(formatRupiah(hargaJual)); // removed, not needed
 
                 // Display total (subtotal - diskon)
                 row.find('.total-item-display').val(formatRupiah(subtotalSetelahDiskon));
