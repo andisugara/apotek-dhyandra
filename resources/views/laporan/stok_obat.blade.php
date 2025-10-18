@@ -27,6 +27,7 @@
                                 <th>Golongan</th>
                                 <th>Kategori</th>
                                 <th>Satuan</th>
+                                <th>Pabrik</th>
                                 <th>Stok</th>
                                 <th>Status</th>
                             </tr>
@@ -73,6 +74,10 @@
                     {
                         data: 'satuan',
                         name: 'obat.satuan.nama'
+                    },
+                    {
+                        data: 'pabrik',
+                        name: 'obat.pabrik.nama'
                     },
                     {
                         data: 'stok',

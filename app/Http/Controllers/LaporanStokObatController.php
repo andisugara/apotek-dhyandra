@@ -24,6 +24,9 @@ class LaporanStokObatController extends Controller
                 ->editColumn('nama_obat', function ($row) {
                     return $row->obat->nama_obat ?? '-';
                 })
+                ->editColumn('pabrik', function ($row) {
+                    return $row->obat->pabrik->nama ?? '-';
+                })
                 ->editColumn('golongan', function ($row) {
                     return $row->obat->golongan->nama ?? '-';
                 })
