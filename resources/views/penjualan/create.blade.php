@@ -7,12 +7,38 @@
         <div class="card-header">
             <h3 class="card-title">Tambah Penjualan</h3>
             <div class="card-toolbar">
+                <button type="button" id="clear-draft-btn" class="btn btn-sm btn-light-warning me-2" style="display: none;">
+                    <i class="ki-duotone ki-trash fs-5">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                        <span class="path3"></span>
+                        <span class="path4"></span>
+                        <span class="path5"></span>
+                    </i>
+                    Hapus Draft
+                </button>
                 <a href="{{ route('penjualan.index') }}" class="btn btn-sm btn-light-primary">
                     <i class="ki-outline ki-arrow-left fs-2"></i>Kembali
                 </a>
             </div>
         </div>
         <div class="card-body">
+            <div id="draft-alert" class="alert alert-info alert-dismissible fade show" role="alert"
+                style="display: none;">
+                <div class="d-flex align-items-center">
+                    <i class="ki-duotone ki-information-5 fs-2hx text-info me-4">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                        <span class="path3"></span>
+                    </i>
+                    <div class="d-flex flex-column">
+                        <h5 class="mb-1">Data Draft Ditemukan</h5>
+                        <span>Data penjualan sebelumnya telah dipulihkan. Anda dapat melanjutkan atau menghapus
+                            draft.</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
             @if (session('error'))
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     {{ session('error') }}
@@ -754,6 +780,32 @@
                     $icon.removeClass('ki-minus-square').addClass('ki-plus-square');
                 }
             });
+
+            // Load draft data if exists
+            loadDraftData();
+
+            // Auto-save draft on input change
+            let saveTimeout;
+            $(document).on('input change', '#penjualanForm input, #penjualanForm select, #penjualanForm textarea',
+                function() {
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(function() {
+                        saveDraftData();
+                    }, 1000); // Save after 1 second of inactivity
+                });
+
+            // Save draft when adding/removing items
+            $(document).on('click', '.remove-item', function() {
+                setTimeout(saveDraftData, 100);
+            });
+
+            // Clear draft button
+            $('#clear-draft-btn').on('click', function() {
+                if (confirm('Yakin ingin menghapus draft? Data yang belum disimpan akan hilang.')) {
+                    clearDraftData();
+                    location.reload();
+                }
+            });
         });
 
         // This function is no longer needed as we're directly adding to cart
@@ -868,6 +920,9 @@
 
             // Recalculate totals
             calculateTotals();
+
+            // Save draft after adding item
+            setTimeout(saveDraftData, 100);
         }
 
         // Calculate totals for a specific row
@@ -1069,6 +1124,135 @@
                 console.warn("Error formatting date:", dateStr, e);
                 return '-';
             }
+        }
+
+        // Draft Data Management Functions
+        function saveDraftData() {
+            const draftData = {
+                tanggal_penjualan: $('input[name="tanggal_penjualan"]').val(),
+                pasien_id: $('select[name="pasien_id"]').val(),
+                jenis: $('input[name="jenis"]:checked').val(),
+                keterangan: $('textarea[name="keterangan"]').val(),
+                cetak_format: $('input[name="cetak_format"]:checked').val(),
+                items: []
+            };
+
+            // Save all cart items
+            $('#cartItems .item-row').each(function() {
+                const row = $(this);
+                const item = {
+                    obat_id: row.find('.obat-id').val(),
+                    obat_nama: row.find('.obat-nama').text(),
+                    obat_kode: row.find('.obat-kode').text(),
+                    satuan_id: row.find('.satuan-id').val(),
+                    satuan_nama: row.find('.satuan-nama').text(),
+                    batch: row.find('.batch').val(),
+                    batch_display: row.find('.batch-display').text(),
+                    lokasi_id: row.find('.lokasi-id').val(),
+                    harga_beli: row.find('.harga-beli').val(),
+                    harga: row.find('.harga').val(),
+                    harga_display: row.find('.harga-display').text(),
+                    jumlah: row.find('.jumlah').val(),
+                    diskon_persen: row.find('.diskon-persen').val(),
+                    tuslah_input: row.find('.tuslah-input').val(),
+                    embalase_input: row.find('.embalase-input').val()
+                };
+                draftData.items.push(item);
+            });
+
+            localStorage.setItem('penjualan_draft', JSON.stringify(draftData));
+            console.log('Draft penjualan saved -', draftData.items.length, 'items');
+        }
+
+        function loadDraftData() {
+            const draftJson = localStorage.getItem('penjualan_draft');
+            if (!draftJson) return;
+
+            try {
+                const draftData = JSON.parse(draftJson);
+
+                // Show alert
+                $('#draft-alert').slideDown();
+                $('#clear-draft-btn').show();
+
+                // Restore main form data
+                if (draftData.tanggal_penjualan) {
+                    $('input[name="tanggal_penjualan"]').val(draftData.tanggal_penjualan);
+                }
+
+                if (draftData.pasien_id) {
+                    $('#pasienSelect').val(draftData.pasien_id).trigger('change');
+                }
+
+                if (draftData.jenis) {
+                    $('input[name="jenis"][value="' + draftData.jenis + '"]').prop('checked', true);
+                }
+
+                if (draftData.keterangan) {
+                    $('textarea[name="keterangan"]').val(draftData.keterangan);
+                }
+
+                if (draftData.cetak_format) {
+                    $('input[name="cetak_format"][value="' + draftData.cetak_format + '"]').prop('checked', true);
+                }
+
+                // Restore cart items
+                if (draftData.items && draftData.items.length > 0) {
+                    $('#emptyCart').hide();
+
+                    draftData.items.forEach(function(item) {
+                        const template = $('#itemTemplate').html();
+                        const newRow = $(template.replace(/__index__/g, itemCount));
+
+                        // Fill in item values
+                        newRow.find('.obat-id').val(item.obat_id);
+                        newRow.find('.obat-nama').text(item.obat_nama);
+                        newRow.find('.obat-kode').text(item.obat_kode);
+                        newRow.find('.satuan-id').val(item.satuan_id);
+                        newRow.find('.satuan-nama').text(item.satuan_nama);
+                        newRow.find('.batch').val(item.batch);
+                        newRow.find('.batch-display').text(item.batch_display);
+                        newRow.find('.lokasi-id').val(item.lokasi_id);
+                        newRow.find('.harga-beli').val(item.harga_beli);
+                        newRow.find('.harga').val(item.harga);
+                        newRow.find('.harga-display').text(item.harga_display);
+                        newRow.find('.jumlah').val(item.jumlah);
+                        newRow.find('.diskon-persen').val(item.diskon_persen || 0);
+
+                        if (item.tuslah_input) {
+                            newRow.find('.tuslah-input').val(item.tuslah_input);
+                        }
+                        if (item.embalase_input) {
+                            newRow.find('.embalase-input').val(item.embalase_input);
+                        }
+
+                        $('#cartItems').append(newRow);
+
+                        // Calculate values for restored row
+                        calculateRowTotal(newRow);
+
+                        itemCount++;
+                    });
+
+                    // Recalculate totals after loading all items
+                    calculateTotals();
+                }
+
+                console.log('Draft penjualan loaded -', draftData.items.length, 'items restored');
+            } catch (e) {
+                console.error('Error loading draft penjualan:', e);
+            }
+        }
+
+        function clearDraftData() {
+            localStorage.removeItem('penjualan_draft');
+            $('#draft-alert').slideUp();
+            $('#clear-draft-btn').hide();
+            console.log('Draft penjualan cleared');
+        }
+
+        function hasDraftData() {
+            return localStorage.getItem('penjualan_draft') !== null;
         }
 
         // Handle print URL if available from session
