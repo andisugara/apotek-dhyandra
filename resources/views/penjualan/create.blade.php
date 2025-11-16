@@ -25,6 +25,10 @@
                     {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
+                <script>
+                    // Clear draft on successful save
+                    localStorage.removeItem('penjualan_draft');
+                </script>
             @endif
 
             <form id="penjualanForm" action="{{ route('penjualan.store') }}" method="POST">
@@ -394,18 +398,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
 
     <style>
-        /* Select2 styling */
+        /* Select2 styling - dengan !important untuk override */
         .select2-container--default .select2-selection--single {
-            height: 41px;
-            padding: 0.5rem 1rem;
-            border-radius: 0.475rem;
-            border: 1px solid var(--bs-gray-300);
-            display: flex;
-            align-items: center;
+            min-height: 48px !important;
+            height: auto !important;
+            padding: 0.65rem 1rem !important;
+            border-radius: 0.475rem !important;
+            border: 1px solid var(--bs-gray-300) !important;
+            display: flex !important;
+            align-items: center !important;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 100%;
+            height: 48px !important;
+            top: 0 !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            margin-top: -2px !important;
         }
 
         .select2-container--default .select2-results__option--highlighted[aria-selected] {
@@ -413,8 +423,8 @@
         }
 
         .select2-container--default .select2-selection--single .select2-selection__rendered {
-            line-height: 24px;
-            padding-left: 0;
+            line-height: 30px !important;
+            padding-left: 0 !important;
             color: var(--bs-gray-700);
         }
 
@@ -477,6 +487,22 @@
                                 <span>${data.text}</span>
                             </div>`);
                 }
+            });
+
+            // Fix height after initialization
+            $('.select2-container--default .select2-selection--single').css({
+                'min-height': '48px',
+                'height': 'auto',
+                'padding': '0.65rem 1rem',
+                'display': 'flex',
+                'align-items': 'center'
+            });
+            $('.select2-container--default .select2-selection--single .select2-selection__rendered').css({
+                'line-height': '30px',
+                'padding-left': '0'
+            });
+            $('.select2-container--default .select2-selection--single .select2-selection__arrow').css({
+                'height': '48px'
             });
 
             // Initialize Select2 for Obat Search with AJAX

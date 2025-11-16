@@ -173,28 +173,89 @@ class PenjualanController extends Controller
                     ->where('satuan_id', $detail['satuan_id'])
                     ->first();
 
-                // Update stock - mencari berdasarkan no_batch dan obat_satuan_id
-                $stok = Stok::where('no_batch', $detail['no_batch'])
-                    ->where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
-                    ->where('lokasi_id', $detail['lokasi_id'])
-                    ->first();
+                // FIFO Stock Reduction Logic
+                // Get all available stock for this obat+satuan, ordered by expiry date (FIFO)
+                // NOTE: We don't filter by lokasi_id to allow cross-location FIFO
+                $availableStocks = Stok::where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
+                    ->where('qty', '>', 0)
+                    ->orderBy('tanggal_expired', 'asc') // FIFO: oldest expiry first
+                    ->get();
 
-                if ($stok) {
-                    // Update expiry date and harga_beli in detail
-                    $penjualanDetail->update([
-                        'tanggal_expired' => $stok->tanggal_expired,
-                        'harga_beli' => $stok->harga_beli
-                    ]);
+                // Log::info("Available stocks for obat {$obat->nama_obat}:", [
+                //     'obat_satuan_id' => $obatSatuan ? $obatSatuan->id : null,
+                //     'requested_qty' => $detail['jumlah'],
+                //     'requested_lokasi' => $detail['lokasi_id'],
+                //     'available_stocks_count' => $availableStocks->count(),
+                //     'total_available_qty' => $availableStocks->sum('qty'),
+                //     'stocks' => $availableStocks->map(function($s) {
+                //         return [
+                //             'batch' => $s->no_batch,
+                //             'qty' => $s->qty,
+                //             'lokasi_id' => $s->lokasi_id,
+                //             'expired' => $s->tanggal_expired
+                //         ];
+                //     })->toArray()
+                // ]);
 
-                    // Update stock quantity
-                    $stok->qty -= $detail['jumlah'];
+                $remainingQty = $detail['jumlah'];
+                $usedBatches = [];
+                $firstBatch = null;
+                $weightedHargaBeli = 0;
+                $totalQtyUsed = 0;
+
+                // Loop through stocks and reduce quantity following FIFO
+                foreach ($availableStocks as $stok) {
+                    if ($remainingQty <= 0) break;
+
+                    // Store first batch info for detail record
+                    if (!$firstBatch) {
+                        $firstBatch = $stok;
+                    }
+
+                    $qtyToTake = min($remainingQty, $stok->qty);
+
+                    // Track batches used for logging
+                    $usedBatches[] = [
+                        'batch' => $stok->no_batch,
+                        'qty_before' => $stok->qty,
+                        'qty_taken' => $qtyToTake,
+                        'qty_after' => $stok->qty - $qtyToTake
+                    ];
+
+                    // Calculate weighted average harga_beli
+                    $weightedHargaBeli += ($stok->harga_beli * $qtyToTake);
+                    $totalQtyUsed += $qtyToTake;
+
+                    // Reduce stock
+                    $stok->qty -= $qtyToTake;
                     $stok->save();
 
-                    // Log for debugging
-                    Log::info("Updated stock for obat {$obat->nama_obat}, batch {$detail['no_batch']}, new qty: {$stok->qty}");
-                } else {
-                    Log::warning("Stock not found for obat {$obat->nama_obat}, batch {$detail['no_batch']}");
+                    $remainingQty -= $qtyToTake;
+
+                    // Log::info("FIFO: Reduced {$qtyToTake} from batch {$stok->no_batch}, remaining stock: {$stok->qty}");
                 }
+
+                // Check if we have enough stock
+                if ($remainingQty > 0) {
+                    throw new \Exception("Stok tidak mencukupi untuk {$obat->nama_obat}. Kurang {$remainingQty} unit.");
+                }
+
+                // Calculate average harga_beli from all batches used
+                $avgHargaBeli = $totalQtyUsed > 0 ? $weightedHargaBeli / $totalQtyUsed : 0;
+
+                // Update detail record with first batch info (for reference) and average harga_beli
+                $penjualanDetail->update([
+                    'tanggal_expired' => $firstBatch ? $firstBatch->tanggal_expired : null,
+                    'harga_beli' => $avgHargaBeli,
+                    'no_batch' => $firstBatch ? $firstBatch->no_batch : $detail['no_batch']
+                ]);
+
+                // Log detailed FIFO operation
+                // Log::info("FIFO Summary for {$obat->nama_obat}:", [
+                //     'requested_qty' => $detail['jumlah'],
+                //     'batches_used' => $usedBatches,
+                //     'avg_harga_beli' => $avgHargaBeli
+                // ]);
             }
 
             // Create accounting transaction for cash sales
