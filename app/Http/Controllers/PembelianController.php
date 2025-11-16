@@ -28,6 +28,8 @@ class PembelianController extends Controller
             $data = Pembelian::with(['supplier', 'akunKas', 'user'])
                 ->select('*');
 
+            $data->orderBy('created_at', 'desc');
+
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn('supplier_nama', function ($row) {
@@ -131,10 +133,10 @@ class PembelianController extends Controller
             'detail.*.obat_id' => 'required|exists:obat,id',
             'detail.*.satuan_id' => 'required|exists:satuan_obat,id',
             'detail.*.jumlah' => 'required|integer|min:1',
-            'detail.*.harga_beli' => 'required|numeric|min:0',
-            'detail.*.diskon_persen' => 'nullable|numeric|min:0|max:100',
-            'detail.*.margin_jual_persen' => 'nullable|numeric|min:0',
-            'detail.*.harga_jual_per_unit' => 'required|numeric|min:0',
+            'detail.*.harga_beli' => 'required|min:0',
+            'detail.*.diskon_persen' => 'nullable|min:0|max:100',
+            'detail.*.margin_jual_persen' => 'nullable|min:0',
+            'detail.*.harga_jual_per_unit' => 'required|min:0',
             'detail.*.no_batch' => 'required|string',
             'detail.*.tanggal_expired' => 'required|date|after:today',
             'detail.*.lokasi_id' => 'required|exists:lokasi_obat,id',
@@ -181,7 +183,14 @@ class PembelianController extends Controller
                 $subtotalItem = $hargaBeli * $jumlah;
 
                 $diskonPersen = floatval($detail['diskon_persen'] ?? 0);
-                $diskonNominal = ($diskonPersen / 100) * $subtotalItem;
+                // Support diskon nominal input (prioritizing nominal if present and > 0)
+                $diskonNominalInput = isset($detail['diskon_nominal']) ? floatval(str_replace([',', '.'], '', $detail['diskon_nominal'])) : 0;
+                if ($diskonNominalInput > 0) {
+                    $diskonNominal = $diskonNominalInput;
+                    $diskonPersen = $subtotalItem > 0 ? ($diskonNominal / $subtotalItem) * 100 : 0;
+                } else {
+                    $diskonNominal = ($diskonPersen / 100) * $subtotalItem;
+                }
 
                 $totalItem = $subtotalItem - $diskonNominal;
                 $hppPerUnit = ($subtotalItem - $diskonNominal) / $jumlah;
@@ -362,10 +371,10 @@ class PembelianController extends Controller
             'detail.*.obat_id' => 'required|exists:obat,id',
             'detail.*.satuan_id' => 'required|exists:satuan_obat,id',
             'detail.*.jumlah' => 'required|integer|min:1',
-            'detail.*.harga_beli' => 'required|numeric|min:0',
-            'detail.*.diskon_persen' => 'nullable|numeric|min:0|max:100',
-            'detail.*.margin_jual_persen' => 'nullable|numeric|min:0',
-            'detail.*.harga_jual_per_unit' => 'required|numeric|min:0',
+            'detail.*.harga_beli' => 'required|min:0',
+            'detail.*.diskon_persen' => 'nullable|min:0|max:100',
+            'detail.*.margin_jual_persen' => 'nullable|min:0',
+            'detail.*.harga_jual_per_unit' => 'required|min:0',
             'detail.*.no_batch' => 'required|string',
             'detail.*.tanggal_expired' => 'required|date|after:today',
             'detail.*.lokasi_id' => 'required|exists:lokasi_obat,id',
@@ -410,7 +419,14 @@ class PembelianController extends Controller
                 $subtotalItem = $hargaBeli * $jumlah;
 
                 $diskonPersen = floatval($detail['diskon_persen'] ?? 0);
-                $diskonNominal = ($diskonPersen / 100) * $subtotalItem;
+                // Support diskon nominal input (prioritizing nominal if present and > 0)
+                $diskonNominalInput = isset($detail['diskon_nominal']) ? floatval(str_replace([',', '.'], '', $detail['diskon_nominal'])) : 0;
+                if ($diskonNominalInput > 0) {
+                    $diskonNominal = $diskonNominalInput;
+                    $diskonPersen = $subtotalItem > 0 ? ($diskonNominal / $subtotalItem) * 100 : 0;
+                } else {
+                    $diskonNominal = ($diskonPersen / 100) * $subtotalItem;
+                }
 
                 $totalItem = $subtotalItem - $diskonNominal;
                 $hppPerUnit = ($subtotalItem - $diskonNominal) / $jumlah;

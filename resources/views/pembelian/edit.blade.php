@@ -20,6 +20,15 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             @endif
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <form id="form-pembelian" action="{{ route('pembelian.update', $pembelian->id) }}" method="POST">
                 @csrf
                 @method('PUT')
@@ -390,9 +399,8 @@
                     step="0.01">
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm diskon-nominal-display text-end" disabled>
-                <input type="hidden" class="diskon-nominal-input" name="detail[__index__][diskon_nominal]"
-                    value="0">
+                <input type="text" class="form-control form-control-sm diskon-nominal-input text-end"
+                    name="detail[__index__][diskon_nominal]" value="0">
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm hpp-display text-end" disabled>
@@ -542,6 +550,11 @@
                 calculateRowValues(row);
             });
 
+            // Calculate discount when nominal changes
+            $(document).on('input', '.diskon-nominal-input', function() {
+                const row = $(this).closest('tr');
+                calculateRowValues(row, false, true); // update persen from nominal
+            });
 
             // Calculate profit when margin changes
             $(document).on('input', '.margin-jual-input', function() {
@@ -793,18 +806,29 @@
             }
         });
 
-        function calculateRowValues(row) {
+        function calculateRowValues(row, skipHargaJual, updateDiskonPersenFromNominal) {
             // Get values
             const jumlah = parseInt(row.find('.jumlah-input').val()) || 0;
             const hargaBeli = parseInt(row.find('.harga-beli-input').val().replace(/[^\d]/g, '')) || 0;
-            const diskonPersen = parseFloat(row.find('.diskon-persen-input').val()) || 0;
+            let diskonPersen = parseFloat(row.find('.diskon-persen-input').val()) || 0;
+            let diskonNominal = parseInt(row.find('.diskon-nominal-input').val().replace(/[^\d]/g, '')) || 0;
             const marginPersen = parseFloat(row.find('.margin-jual-input').val()) || 0;
             const ppnPersen = parseFloat($('#ppn-total').val()) || 0;
-            const hargaJualInput = row.find('.harga-jual-input').val().replace(/[^\d]/g, '');
 
             // Calculate values
             const subtotal = jumlah * hargaBeli;
-            const diskonNominal = (diskonPersen / 100) * subtotal;
+
+            // Sync diskon persen <-> nominal
+            if (updateDiskonPersenFromNominal) {
+                // User edited nominal, update persen
+                diskonPersen = subtotal > 0 ? (diskonNominal / subtotal) * 100 : 0;
+                row.find('.diskon-persen-input').val(diskonPersen.toFixed(2));
+            } else {
+                // User edited persen, update nominal
+                diskonNominal = (diskonPersen / 100) * subtotal;
+                row.find('.diskon-nominal-input').val(diskonNominal > 0 ? formatRupiah(diskonNominal) : '0');
+            }
+
             const subtotalSetelahDiskon = subtotal - diskonNominal;
             const ppnNominalPerItem = (ppnPersen / 100) * subtotalSetelahDiskon;
 
@@ -812,32 +836,23 @@
             const totalDenganPPN = subtotalSetelahDiskon + ppnNominalPerItem;
             const hppPerUnit = jumlah > 0 ? (subtotalSetelahDiskon + ppnNominalPerItem) / jumlah : 0;
 
-            // Harga jual berdasarkan HPP + margin
-            let hargaJual = hppPerUnit + ((marginPersen / 100) * hppPerUnit);
-            // If called from harga_jual manual edit, don't overwrite harga_jual
-            if (arguments.length < 2 || !arguments[1]) {
-                row.find('.harga-jual-input').val(hargaJual > 0 ? formatRupiah(hargaJual.toFixed(0)) : '');
-            } else {
+            // Harga jual berdasarkan HPP + margin (bulatkan ke bilangan bulat)
+            let hargaJual = Math.round(hppPerUnit + ((marginPersen / 100) * hppPerUnit));
 
-                // If harga_jual was edited, use the current value
-                const manualHargaJual = parseFloat(row.find('.harga-jual-input').val().replace(/[^\d]/g, '')) ||
-                    0;
-                hargaJual = manualHargaJual;
+            // If called from harga_jual manual edit, don't overwrite harga_jual
+            if (!skipHargaJual) {
+                row.find('.harga-jual-input').val(hargaJual > 0 ? formatRupiah(hargaJual) : '');
             }
 
             // Update displays
             row.find('.subtotal-item-display').val(formatRupiah(subtotal));
             row.find('.subtotal-item-input').val(subtotal);
 
-            row.find('.diskon-nominal-display').val(formatRupiah(diskonNominal));
-            row.find('.diskon-nominal-input').val(diskonNominal);
+            row.find('.diskon-nominal-input').val(diskonNominal > 0 ? formatRupiah(diskonNominal) : '0');
 
             // Display HPP per unit
             row.find('.hpp-display').val(formatRupiah(hppPerUnit));
             row.find('.hpp-input').val(hppPerUnit);
-
-            // Display harga jual (input is now editable)
-            // row.find('.harga-jual-display').val(formatRupiah(hargaJual)); // removed, not needed
 
             row.find('.total-item-display').val(formatRupiah(subtotalSetelahDiskon));
             row.find('.total-item-input').val(subtotalSetelahDiskon);
@@ -859,7 +874,7 @@
             // Sum up all rows
             $('.detail-row').each(function() {
                 const rowSubtotal = parseInt($(this).find('.subtotal-item-input').val()) || 0;
-                const rowDiskon = parseInt($(this).find('.diskon-nominal-input').val()) || 0;
+                const rowDiskon = parseInt($(this).find('.diskon-nominal-input').val().replace(/[^\d]/g, '')) || 0;
                 const rowTotal = parseInt($(this).find('.total-item-input').val()) || 0;
 
                 subtotal += rowSubtotal;
