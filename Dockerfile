@@ -29,6 +29,7 @@ RUN docker-php-ext-install gd
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 # Create system user to run Composer and Artisan Commands
 RUN useradd -G www-data,root -u $uid -d /home/$user $user
