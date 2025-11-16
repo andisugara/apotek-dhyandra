@@ -6,13 +6,45 @@
             <div class="card-title">
                 <h3>Tambah Pembelian</h3>
             </div>
+            <div class="card-toolbar">
+                <button type="button" id="clear-draft-btn" class="btn btn-sm btn-light-warning" style="display: none;">
+                    <i class="ki-duotone ki-trash fs-5">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                        <span class="path3"></span>
+                        <span class="path4"></span>
+                        <span class="path5"></span>
+                    </i>
+                    Hapus Draft
+                </button>
+            </div>
         </div>
         <div class="card-body py-4">
+            <div id="draft-alert" class="alert alert-info alert-dismissible fade show" role="alert"
+                style="display: none;">
+                <div class="d-flex align-items-center">
+                    <i class="ki-duotone ki-information-5 fs-2hx text-info me-4">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                        <span class="path3"></span>
+                    </i>
+                    <div class="d-flex flex-column">
+                        <h5 class="mb-1">Data Draft Ditemukan</h5>
+                        <span>Data pembelian sebelumnya telah dipulihkan. Anda dapat melanjutkan atau menghapus
+                            draft.</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
             @if (session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
+                <script>
+                    // Clear draft on successful save
+                    localStorage.removeItem('pembelian_draft');
+                </script>
             @endif
             @if (session('error'))
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -323,6 +355,10 @@
             $('#add-detail-btn').on('click', function() {
                 console.log('Add detail button clicked');
                 addDetailRow();
+                // Save draft after adding new row
+                setTimeout(function() {
+                    saveDraftData();
+                }, 100);
             });
 
             // Initialize jQuery validate
@@ -364,6 +400,8 @@
                 $(this).closest('tr').remove();
                 updateEmptyRowVisibility();
                 calculateTotals();
+                // Save draft after deleting row
+                saveDraftData();
             });
 
             // Change obat (load satuan)
@@ -473,8 +511,46 @@
                 $(this).val(value);
             });
 
-            // Add first row on load
-            addDetailRow();
+            // Load draft data if exists
+            loadDraftData();
+
+            // Auto-save on input change, blur, and change (debounced)
+            let saveTimeout;
+
+            // Save on input (typing)
+            $(document).on('input', '#form-pembelian input, #form-pembelian select, #form-pembelian textarea',
+                function() {
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(function() {
+                        saveDraftData();
+                    }, 1000); // Save after 1 second of inactivity
+                });
+
+            // Save on change (select dropdown, checkbox, radio)
+            $(document).on('change',
+                '#form-pembelian select, #form-pembelian input[type="checkbox"], #form-pembelian input[type="radio"]',
+                function() {
+                    saveDraftData();
+                });
+
+            // Save on blur (when leaving input field)
+            $(document).on('blur', '#form-pembelian input, #form-pembelian select, #form-pembelian textarea',
+                function() {
+                    saveDraftData();
+                });
+
+            // Clear draft button
+            $('#clear-draft-btn').on('click', function() {
+                if (confirm('Yakin ingin menghapus draft? Data yang belum disimpan akan hilang.')) {
+                    clearDraftData();
+                    location.reload();
+                }
+            });
+
+            // Add first row on load (only if no draft data)
+            if (!hasDraftData()) {
+                addDetailRow();
+            }
 
             // Functions
             function addDetailRow() {
@@ -731,6 +807,9 @@
                             return false;
                         }
 
+                        // DON'T clear draft here - let it clear only on successful save
+                        // clearDraftData();
+
                         // Show loading state on button
                         var btn = $(form).find('[type="submit"]');
                         var loadingText =
@@ -749,6 +828,188 @@
                     var endDate = new Date(value);
                     return endDate >= startDate;
                 }, "Tanggal jatuh tempo harus setelah tanggal faktur");
+            }
+
+            // Draft Data Management Functions
+            function saveDraftData() {
+                const draftData = {
+                    no_po: $('input[name="no_po"]').val(),
+                    no_faktur: $('input[name="no_faktur"]').val(),
+                    tanggal_faktur: $('input[name="tanggal_faktur"]').val(),
+                    supplier_id: $('select[name="supplier_id"]').val(),
+                    jenis: $('select[name="jenis"]').val(),
+                    akun_kas_id: $('select[name="akun_kas_id"]').val(),
+                    tanggal_jatuh_tempo: $('input[name="tanggal_jatuh_tempo"]').val(),
+                    ppn_total: $('#ppn-total').val(),
+                    details: []
+                };
+
+                // Save all detail rows
+                $('.detail-row').each(function() {
+                    const row = $(this);
+                    const detail = {
+                        obat_id: row.find('.obat-select').val(),
+                        satuan_id: row.find('.satuan-select').val(),
+                        jumlah: row.find('.jumlah-input').val(),
+                        harga_beli: row.find('.harga-beli-input').val(),
+                        diskon_persen: row.find('.diskon-persen-input').val(),
+                        diskon_nominal: row.find('.diskon-nominal-input').val(),
+                        margin_jual_persen: row.find('.margin-jual-input').val(),
+                        harga_jual_per_unit: row.find('.harga-jual-input').val(),
+                        no_batch: row.find('input[name*="[no_batch]"]').val(),
+                        tanggal_expired: row.find('input[name*="[tanggal_expired]"]').val(),
+                        lokasi_id: row.find('select[name*="[lokasi_id]"]').val()
+                    };
+                    draftData.details.push(detail);
+                });
+
+                localStorage.setItem('pembelian_draft', JSON.stringify(draftData));
+                console.log('Draft saved automatically -', draftData.details.length, 'items');
+            }
+
+            function loadDraftData() {
+                const draftJson = localStorage.getItem('pembelian_draft');
+                if (!draftJson) return;
+
+                try {
+                    const draftData = JSON.parse(draftJson);
+
+                    // Show alert
+                    $('#draft-alert').slideDown();
+                    $('#clear-draft-btn').show();
+
+                    // Restore main form data
+                    $('input[name="no_po"]').val(draftData.no_po || '');
+                    $('input[name="no_faktur"]').val(draftData.no_faktur || '');
+                    $('input[name="tanggal_faktur"]').val(draftData.tanggal_faktur || '');
+
+                    if (draftData.supplier_id) {
+                        $('select[name="supplier_id"]').val(draftData.supplier_id).trigger('change');
+                    }
+                    if (draftData.jenis) {
+                        $('select[name="jenis"]').val(draftData.jenis).trigger('change');
+                    }
+                    if (draftData.akun_kas_id) {
+                        $('select[name="akun_kas_id"]').val(draftData.akun_kas_id).trigger('change');
+                    }
+                    $('input[name="tanggal_jatuh_tempo"]').val(draftData.tanggal_jatuh_tempo || '');
+                    $('#ppn-total').val(draftData.ppn_total || '0');
+
+                    // Restore details
+                    if (draftData.details && draftData.details.length > 0) {
+                        console.log('Restoring', draftData.details.length, 'detail items');
+
+                        // Process each detail sequentially to ensure proper loading
+                        let detailPromises = [];
+
+                        draftData.details.forEach(function(detail, index) {
+                            let promise = new Promise(function(resolve) {
+                                // Add new row
+                                addDetailRow();
+
+                                // Get the newly added row
+                                const row = $('.detail-row').eq(index);
+
+                                // Set obat and trigger change to load satuan options
+                                if (detail.obat_id) {
+                                    // Set value and trigger Select2 to update visual
+                                    const obatSelect = row.find('.obat-select');
+                                    obatSelect.val(detail.obat_id).trigger('change.select2');
+
+                                    // Load satuan options via AJAX
+                                    $.ajax({
+                                        url: `/pembelian/obat-satuans/${detail.obat_id}`,
+                                        method: 'GET',
+                                        success: function(response) {
+                                            const satuanSelect = row.find(
+                                                '.satuan-select');
+                                            let options =
+                                                '<option value="">Pilih Satuan</option>';
+                                            response.forEach(function(satuan) {
+                                                options +=
+                                                    `<option value="${satuan.satuan_id}">${satuan.satuan.nama}</option>`;
+                                            });
+                                            satuanSelect.html(options);
+                                            satuanSelect.prop('disabled', false);
+
+                                            // Set all values after satuan options loaded
+                                            setTimeout(function() {
+                                                if (detail.satuan_id) {
+                                                    // Update Select2 visual for satuan if it exists
+                                                    row.find('.satuan-select')
+                                                        .val(detail.satuan_id);
+                                                }
+                                                row.find('.jumlah-input').val(
+                                                    detail.jumlah || 1);
+                                                row.find('.harga-beli-input')
+                                                    .val(detail.harga_beli ||
+                                                        '0');
+                                                row.find('.diskon-persen-input')
+                                                    .val(detail.diskon_persen ||
+                                                        '0');
+                                                row.find('.margin-jual-input')
+                                                    .val(detail
+                                                        .margin_jual_persen ||
+                                                        '10');
+                                                row.find(
+                                                    'input[name*="[no_batch]"]'
+                                                ).val(detail.no_batch ||
+                                                    '');
+                                                row.find(
+                                                    'input[name*="[tanggal_expired]"]'
+                                                ).val(detail
+                                                    .tanggal_expired || '');
+                                                if (detail.lokasi_id) {
+                                                    row.find(
+                                                        'select[name*="[lokasi_id]"]'
+                                                    ).val(detail
+                                                        .lokasi_id);
+                                                }
+
+                                                // Trigger calculation
+                                                calculateRowValues(row);
+
+                                                resolve();
+                                            }, 200);
+                                        },
+                                        error: function() {
+                                            console.error(
+                                                'Error loading satuan for obat',
+                                                detail.obat_id);
+                                            resolve();
+                                        }
+                                    });
+                                } else {
+                                    resolve();
+                                }
+                            });
+
+                            detailPromises.push(promise);
+                        });
+
+                        // Wait for all details to be loaded
+                        Promise.all(detailPromises).then(function() {
+                            console.log('All', draftData.details.length,
+                                'detail items restored successfully');
+                            calculateTotals();
+                        });
+                    }
+
+                    console.log('Draft data restoration initiated');
+                } catch (e) {
+                    console.error('Error loading draft:', e);
+                }
+            }
+
+            function clearDraftData() {
+                localStorage.removeItem('pembelian_draft');
+                $('#draft-alert').slideUp();
+                $('#clear-draft-btn').hide();
+                console.log('Draft cleared');
+            }
+
+            function hasDraftData() {
+                return localStorage.getItem('pembelian_draft') !== null;
             }
         });
     </script>

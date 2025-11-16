@@ -20,6 +20,10 @@
                     {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
+                <script>
+                    // Clear draft on successful save
+                    localStorage.removeItem('pembelian_draft');
+                </script>
             @endif
             <div class="d-flex justify-content-end">
                 <!--begin::Search-->
