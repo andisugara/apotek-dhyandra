@@ -603,8 +603,9 @@
             });
 
             // Initialize calculations for existing rows
+            // Skip harga_jual calculation to preserve database values
             $('.detail-row').each(function() {
-                calculateRowValues($(this));
+                calculateRowValues($(this), true); // true = skip harga_jual recalculation
             });
             calculateTotals();
 

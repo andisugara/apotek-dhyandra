@@ -199,8 +199,6 @@ class PembelianController extends Controller
                 $hnaPpnPerUnit = $hargaBeli;
 
                 $marginJualPersen = floatval($detail['margin_jual_persen'] ?? 10);
-                $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                $hargaJualPerUnit = $hppPerUnit + $marginJualNominal;
 
                 // Tambahkan perhitungan untuk HPP setelah menambahkan PPN
                 $ppnPersen = floatval($request->ppn_total ?? 0);
@@ -210,8 +208,7 @@ class PembelianController extends Controller
                 // Hitung ulang HPP dengan PPN
                 $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
 
-                // Hitung ulang harga jual berdasarkan HPP baru
-                // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
+                // Gunakan harga jual yang di-input user (sudah dalam format angka)
                 $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
 
                 $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
@@ -238,18 +235,8 @@ class PembelianController extends Controller
                     'total' => $totalItem
                 ]);
 
-                // Tambahkan perhitungan untuk HPP setelah menambahkan PPN
-                // Hitung PPN untuk item ini
-                $ppnPersen = floatval($request->ppn_total ?? 0);
-                $ppnNominalPerItem = ($ppnPersen / 100) * $totalItem;
-                $totalDenganPPN = $totalItem + $ppnNominalPerItem;
-
-                // Hitung ulang HPP dengan PPN
-                $hppPerUnit = $jumlah > 0 ? $totalDenganPPN / $jumlah : 0;
-
-                // Hitung ulang harga jual berdasarkan HPP baru
-                // $marginJualNominal = ($marginJualPersen / 100) * $hppPerUnit;
-                $hargaJualPerUnit = floatval(str_replace([',', '.'], '', $detail['harga_jual_per_unit'] ?? 0));
+                // NOTE: hppPerUnit dan hargaJualPerUnit sudah dihitung di atas
+                // Tidak perlu hitung ulang agar tidak override input user
 
                 // Create or update stock
                 Stok::create([
