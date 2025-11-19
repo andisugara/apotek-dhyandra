@@ -2,7 +2,8 @@
 
 @section('content')
     <div class="container-fluid">
-        <div class="card">
+        {{-- Penjualan Sync --}}
+        <div class="card mb-5">
             <div class="card-header">
                 <h3 class="card-title">Sinkronisasi Penjualan</h3>
                 <div class="card-toolbar">
@@ -57,7 +58,7 @@
 
                 {{-- Progress --}}
                 <div id="sync-progress" class="alert alert-info mt-4" style="display: none;">
-                    <strong>Sedang sinkronisasi...</strong>
+                    <strong>Sedang sinkronisasi penjualan...</strong>
                     <div class="progress mt-2">
                         <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
                     </div>
@@ -65,6 +66,50 @@
 
                 {{-- Result --}}
                 <div id="sync-result" class="mt-4" style="display: none;"></div>
+            </div>
+        </div>
+
+        {{-- Pembelian Sync --}}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Sinkronisasi Pembelian</h3>
+            </div>
+            <div class="card-body">
+                {{-- Stats --}}
+                <div class="row mb-5">
+                    <div class="col-md-12">
+                        <div class="card bg-light-info h-100">
+                            <div class="card-body">
+                                <h2 class="text-info">{{ $pembelianOnlineCount }}</h2>
+                                <p class="mb-0">Pembelian dari Server (Sudah tersinkron)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Actions --}}
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <button id="btn-pull-pembelian" class="btn btn-info btn-lg w-100">
+                            <i class="ki-outline ki-cloud-download fs-2"></i>
+                            Pull Pembelian dari Server
+                        </button>
+                        <small class="text-muted d-block mt-2">
+                            Download data pembelian dari server (Pembelian hanya bisa di-input di server)
+                        </small>
+                    </div>
+                </div>
+
+                {{-- Progress --}}
+                <div id="sync-progress-pembelian" class="alert alert-info mt-4" style="display: none;">
+                    <strong>Sedang sinkronisasi pembelian...</strong>
+                    <div class="progress mt-2">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                {{-- Result --}}
+                <div id="sync-result-pembelian" class="mt-4" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -180,6 +225,60 @@
                             .addClass('alert alert-danger')
                             .html(`
                         <h5>✗ Pull Gagal</h5>
+                        <p>${xhr.responseJSON?.message || 'Terjadi kesalahan'}</p>
+                    `)
+                            .show();
+                    }
+                });
+            });
+
+            // Pull Pembelian button
+            $('#btn-pull-pembelian').click(function() {
+                if (!confirm('Pull pembelian dari server?')) return;
+
+                const btn = $(this);
+                const originalText = btn.html();
+
+                btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-2"></i>Pulling...');
+                $('#sync-progress-pembelian').show();
+                $('#sync-result-pembelian').hide();
+
+                $.ajax({
+                    url: '{{ route('sync.pull-pembelian') }}',
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        $('#sync-progress-pembelian').hide();
+                        btn.prop('disabled', false).html(originalText);
+
+                        $('#sync-result-pembelian')
+                            .removeClass('alert-danger')
+                            .addClass('alert alert-success')
+                            .html(`
+                        <h5>✓ Pull Pembelian Berhasil</h5>
+                        <p>${response.message}</p>
+                        <ul>
+                            <li>Berhasil: ${response.data.success}</li>
+                            <li>Duplikat (Skip): ${response.data.skipped}</li>
+                        </ul>
+                    `)
+                            .show();
+
+                        if (response.data.success > 0) {
+                            setTimeout(() => location.reload(), 2000);
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#sync-progress-pembelian').hide();
+                        btn.prop('disabled', false).html(originalText);
+
+                        $('#sync-result-pembelian')
+                            .removeClass('alert-success')
+                            .addClass('alert alert-danger')
+                            .html(`
+                        <h5>✗ Pull Pembelian Gagal</h5>
                         <p>${xhr.responseJSON?.message || 'Terjadi kesalahan'}</p>
                     `)
                             .show();

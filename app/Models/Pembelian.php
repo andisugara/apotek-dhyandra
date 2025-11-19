@@ -17,7 +17,6 @@ class Pembelian extends Model
         'tanggal_faktur',
         'supplier_id',
         'jenis',
-        'status_pembayaran',
         'akun_kas_id',
         'tanggal_jatuh_tempo',
         'subtotal',
@@ -25,6 +24,9 @@ class Pembelian extends Model
         'ppn_total',
         'grand_total',
         'user_id',
+        'status_pembayaran',
+        'is_online',
+        'server_id',
     ];
 
     protected $casts = [
@@ -34,7 +36,16 @@ class Pembelian extends Model
         'diskon_total' => 'decimal:2',
         'ppn_total' => 'decimal:2',
         'grand_total' => 'decimal:2',
+        'is_online' => 'boolean',
     ];
+
+    /**
+     * Scope untuk filter pembelian online
+     */
+    public function scopeOnline($query)
+    {
+        return $query->where('is_online', true);
+    }
 
     // Relationships
     public function supplier()

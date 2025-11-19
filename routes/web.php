@@ -147,5 +147,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sync', [\App\Http\Controllers\SyncController::class, 'index'])->name('sync.index');
     Route::post('/sync/push', [\App\Http\Controllers\SyncController::class, 'push'])->name('sync.push');
     Route::post('/sync/pull', [\App\Http\Controllers\SyncController::class, 'pull'])->name('sync.pull');
+    Route::post('/sync/pull-pembelian', [\App\Http\Controllers\SyncController::class, 'pullPembelian'])->name('sync.pull-pembelian');
     Route::get('/sync/check-connection', [\App\Http\Controllers\SyncController::class, 'checkConnection'])->name('sync.check');
 });

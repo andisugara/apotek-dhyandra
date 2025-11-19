@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
+use App\Models\Pembelian;
+use App\Models\PembelianDetail;
+use App\Models\Stok;
+use App\Models\ObatSatuan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
@@ -27,8 +31,9 @@ class SyncController extends Controller
     {
         $offlineCount = Penjualan::offline()->count();
         $onlineCount = Penjualan::online()->count();
+        $pembelianOnlineCount = Pembelian::online()->count();
 
-        return view('sync.index', compact('offlineCount', 'onlineCount'));
+        return view('sync.index', compact('offlineCount', 'onlineCount', 'pembelianOnlineCount'));
     }
 
     /**
@@ -267,6 +272,153 @@ class SyncController extends Controller
             return response()->json([
                 'is_online' => false
             ]);
+        }
+    }
+
+    /**
+     * PULL pembelian online dari server
+     */
+    public function pullPembelian()
+    {
+        try {
+            // Request data pembelian dari server yang is_online = true
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Accept' => 'application/json',
+            ])
+                ->timeout(60)
+                ->get($this->serverUrl . '/api/pembelian/online');
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengambil data dari server'
+                ], $response->status());
+            }
+
+            $serverPembelian = $response->json()['data'] ?? [];
+
+            if (empty($serverPembelian)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada data pembelian online dari server'
+                ]);
+            }
+
+            DB::beginTransaction();
+
+            $successCount = 0;
+            $skippedCount = 0;
+
+            foreach ($serverPembelian as $data) {
+                // Skip jika sudah ada (cek berdasarkan server_id)
+                $exists = Pembelian::where('server_id', $data['id'])->exists();
+
+                if ($exists) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                // Insert pembelian
+                $pembelian = Pembelian::create([
+                    'no_po' => $data['no_po'],
+                    'no_faktur' => $data['no_faktur'],
+                    'tanggal_faktur' => $data['tanggal_faktur'],
+                    'supplier_id' => $data['supplier_id'],
+                    'jenis' => $data['jenis'],
+                    'akun_kas_id' => $data['akun_kas_id'],
+                    'tanggal_jatuh_tempo' => $data['tanggal_jatuh_tempo'],
+                    'subtotal' => $data['subtotal'],
+                    'diskon_total' => $data['diskon_total'],
+                    'ppn_total' => $data['ppn_total'],
+                    'grand_total' => $data['grand_total'],
+                    'status_pembayaran' => $data['status_pembayaran'],
+                    'user_id' => $data['user_id'],
+                    'is_online' => true, // Data dari server = online
+                    'server_id' => $data['id'], // ID dari server
+                ]);
+
+                // Insert details dan stok
+                foreach ($data['details'] as $detail) {
+                    // Create pembelian detail
+                    $pembelianDetail = PembelianDetail::create([
+                        'pembelian_id' => $pembelian->id,
+                        'obat_id' => $detail['obat_id'],
+                        'obat_satuan_id' => $detail['obat_satuan_id'],
+                        'satuan_id' => $detail['satuan_id'],
+                        'jumlah' => $detail['jumlah'],
+                        'harga_beli' => $detail['harga_beli'],
+                        'subtotal' => $detail['subtotal'],
+                        'diskon_persen' => $detail['diskon_persen'],
+                        'diskon_nominal' => $detail['diskon_nominal'],
+                        'hpp_per_unit' => $detail['hpp_per_unit'],
+                        'hna_ppn_per_unit' => $detail['hna_ppn_per_unit'],
+                        'margin_jual_persen' => $detail['margin_jual_persen'],
+                        'harga_jual_per_unit' => $detail['harga_jual_per_unit'],
+                        'no_batch' => $detail['no_batch'],
+                        'tanggal_expired' => $detail['tanggal_expired'],
+                        'total' => $detail['total'],
+                    ]);
+
+                    // Create stok
+                    Stok::create([
+                        'obat_id' => $detail['obat_id'],
+                        'satuan_id' => $detail['satuan_id'],
+                        'obat_satuan_id' => $detail['obat_satuan_id'],
+                        'lokasi_id' => $detail['lokasi_id'],
+                        'no_batch' => $detail['no_batch'],
+                        'tanggal_expired' => $detail['tanggal_expired'],
+                        'qty' => $detail['jumlah'],
+                        'qty_awal' => $detail['jumlah'],
+                        'pembelian_detail_id' => $pembelianDetail->id,
+                        'harga_beli' => $detail['hpp_per_unit'],
+                        'harga_jual' => $detail['harga_jual_per_unit']
+                    ]);
+
+                    // Update atau create ObatSatuan
+                    $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
+                        ->where('satuan_id', $detail['satuan_id'])
+                        ->first();
+
+                    if ($obatSatuan) {
+                        $obatSatuan->update([
+                            'harga_beli' => $detail['hpp_per_unit'],
+                            'profit_persen' => $detail['margin_jual_persen'],
+                            'harga_jual' => $detail['harga_jual_per_unit']
+                        ]);
+                    } else {
+                        ObatSatuan::create([
+                            'obat_id' => $detail['obat_id'],
+                            'satuan_id' => $detail['satuan_id'],
+                            'harga_beli' => $detail['hpp_per_unit'],
+                            'diskon_persen' => 0,
+                            'profit_persen' => $detail['margin_jual_persen'],
+                            'harga_jual' => $detail['harga_jual_per_unit']
+                        ]);
+                    }
+                }
+
+                $successCount++;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil pull {$successCount} pembelian, {$skippedCount} duplikat di-skip",
+                'data' => [
+                    'success' => $successCount,
+                    'skipped' => $skippedCount
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Pull pembelian error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

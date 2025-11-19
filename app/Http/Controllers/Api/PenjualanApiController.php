@@ -257,7 +257,7 @@ class PenjualanApiController extends Controller
                     'bayar' => $p->bayar,
                     'kembalian' => $p->kembalian,
                     'user_id' => $p->user_id,
-                    'detail' => $p->details->map(function ($d) {
+                    'details' => $p->details->map(function ($d) {
                         return [
                             'obat_id' => $d->obat_id,
                             'satuan_id' => $d->satuan_id,
