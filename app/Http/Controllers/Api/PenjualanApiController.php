@@ -262,6 +262,7 @@ class PenjualanApiController extends Controller
                             'obat_id' => $d->obat_id,
                             'satuan_id' => $d->satuan_id,
                             'jumlah' => $d->jumlah,
+                            'harga_beli' => $d->harga_beli ?? 0,
                             'harga' => $d->harga,
                             'subtotal' => $d->subtotal,
                             'diskon' => $d->diskon,

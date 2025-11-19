@@ -221,16 +221,16 @@ class SyncController extends Controller
                         'obat_id' => $detail['obat_id'],
                         'satuan_id' => $detail['satuan_id'],
                         'jumlah' => $detail['jumlah'],
-                        'harga_beli' => $detail['harga_beli'],
+                        'harga_beli' => $detail['harga_beli'] ?? 0,
                         'harga' => $detail['harga'],
                         'subtotal' => $detail['subtotal'],
-                        'diskon' => $detail['diskon'],
-                        'ppn' => $detail['ppn'],
-                        'tuslah' => $detail['tuslah'],
-                        'embalase' => $detail['embalase'],
+                        'diskon' => $detail['diskon'] ?? 0,
+                        'ppn' => $detail['ppn'] ?? 0,
+                        'tuslah' => $detail['tuslah'] ?? 0,
+                        'embalase' => $detail['embalase'] ?? 0,
                         'total' => $detail['total'],
-                        'no_batch' => $detail['no_batch'],
-                        'lokasi_id' => $detail['lokasi_id'],
+                        'no_batch' => $detail['no_batch'] ?? '',
+                        'lokasi_id' => $detail['lokasi_id'] ?? 1,
                     ]);
                 }
 
