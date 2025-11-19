@@ -260,7 +260,7 @@ class SyncController extends Controller
     {
         try {
             $response = Http::timeout(5)->get($this->serverUrl . '/api/ping');
-
+            dd($response);
             return response()->json([
                 'is_online' => $response->successful()
             ]);
