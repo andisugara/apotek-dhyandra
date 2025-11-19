@@ -333,12 +333,15 @@
                     min="1" value="1">
             </td>
             <td>
-                <div class="input-group input-group-sm">
+                <div class="input-group input-group-sm mb-1">
                     <input type="number" name="detail[__index__][diskon_persen]"
-                        class="form-control form-control-sm diskon-persen" min="0" max="100" value="0"
-                        placeholder="%">
+                        class="form-control diskon-persen" min="0" max="100" value="0" step="0.01">
+                    <span class="input-group-text">%</span>
+                </div>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" class="form-control diskon-nominal-display text-end" value="0">
                     <input type="hidden" name="detail[__index__][diskon]" class="diskon" value="0">
-                    <span class="diskon-display form-text w-100 mt-1">Rp 0</span>
                 </div>
             </td>
             <td>
@@ -695,8 +698,16 @@
 
             // Update totals when quantity changes
             $(document).on('change', '.jumlah, .diskon-persen', function() {
-                calculateRowTotal($(this).closest('tr'));
+                const row = $(this).closest('tr');
+                calculateRowTotal(row, false); // false = update nominal from persen
                 calculateTotals(); // Update grand total after row calculation
+            });
+
+            // Update totals when diskon nominal changes
+            $(document).on('input', '.diskon-nominal-display', function() {
+                const row = $(this).closest('tr');
+                calculateRowTotal(row, true); // true = update persen from nominal
+                calculateTotals();
             });
 
             // Handle tuslah and embalase input changes
@@ -912,8 +923,8 @@
             $('#emptyCart').hide();
             $('#cartItems').append(newRow);
 
-            // Calculate values for new row
-            calculateRowTotal(newRow);
+            // Calculate values for new row (false = update nominal from persen)
+            calculateRowTotal(newRow, false);
 
             // Increment counter for next item
             itemCount++;
@@ -926,26 +937,40 @@
         }
 
         // Calculate totals for a specific row
-        function calculateRowTotal(row) {
+        // updatePersenFromNominal: true = user edited nominal, update persen
+        // updatePersenFromNominal: false = user edited persen, update nominal
+        function calculateRowTotal(row, updatePersenFromNominal = false) {
             const quantity = parseInt(row.find('.jumlah').val() || 1);
             const harga = parseFloat(row.find('.harga').val() || 0);
-            const diskonPersen = parseFloat(row.find('.diskon-persen').val() || 0);
+            let diskonPersen = parseFloat(row.find('.diskon-persen').val() || 0);
+            let diskonNominal = parseFloat(row.find('.diskon-nominal-display').val().replace(/[^\d]/g, '') || 0);
 
             // Get tuslah and embalase values from input fields
             const tuslahInput = parseFloat(row.find('.tuslah-input').val() || 0);
             const embalaseInput = parseFloat(row.find('.embalase-input').val() || 0);
 
-            // Calculate values
+            // Calculate subtotal
             const subtotal = quantity * harga;
-            const diskon = (diskonPersen / 100) * subtotal;
-            const total = subtotal - diskon + tuslahInput + embalaseInput;
+
+            // Sync diskon persen <-> nominal
+            if (updatePersenFromNominal) {
+                // User edited nominal, update persen
+                diskonPersen = subtotal > 0 ? (diskonNominal / subtotal) * 100 : 0;
+                row.find('.diskon-persen').val(diskonPersen.toFixed(2));
+            } else {
+                // User edited persen, update nominal
+                diskonNominal = (diskonPersen / 100) * subtotal;
+                row.find('.diskon-nominal-display').val(diskonNominal > 0 ? formatNumber(diskonNominal) : '0');
+            }
+
+            const total = subtotal - diskonNominal + tuslahInput + embalaseInput;
 
             console.log('Row calculation:', {
                 quantity,
                 harga,
                 diskonPersen,
                 subtotal,
-                diskon,
+                diskonNominal,
                 tuslahInput,
                 embalaseInput,
                 total
@@ -953,19 +978,19 @@
 
             // Update hidden inputs
             row.find('.item-subtotal').val(subtotal.toFixed(2));
-            row.find('.diskon').val(diskon.toFixed(2));
+            row.find('.diskon').val(diskonNominal.toFixed(2));
             row.find('.ppn').val(0); // PPN sudah termasuk di harga jual
             row.find('.tuslah').val(tuslahInput.toFixed(2));
             row.find('.embalase').val(embalaseInput.toFixed(2));
             row.find('.total').val(total.toFixed(2));
 
             // Update display
-            row.find('.diskon-display').text('Rp ' + formatNumber(diskon));
+            row.find('.diskon-display').text('Rp ' + formatNumber(diskonNominal));
             row.find('.total-display').text('Rp ' + formatNumber(total));
 
             return {
                 subtotal,
-                diskon,
+                diskon: diskonNominal,
                 tuslah: tuslahInput,
                 embalase: embalaseInput,
                 total
@@ -1228,8 +1253,8 @@
 
                         $('#cartItems').append(newRow);
 
-                        // Calculate values for restored row
-                        calculateRowTotal(newRow);
+                        // Calculate values for restored row (false = update nominal from persen)
+                        calculateRowTotal(newRow, false);
 
                         itemCount++;
                     });
