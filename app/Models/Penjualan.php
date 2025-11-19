@@ -14,6 +14,7 @@ class Penjualan extends Model
         'tanggal_penjualan',
         'pasien_id',
         'jenis',
+        'keterangan',
         'subtotal',
         'diskon_total',
         'ppn_total',
@@ -23,7 +24,8 @@ class Penjualan extends Model
         'bayar',
         'kembalian',
         'user_id',
-        'keterangan',
+        'is_online',
+        'server_id',
     ];
 
     protected $casts = [
@@ -36,7 +38,19 @@ class Penjualan extends Model
         'grand_total' => 'decimal:2',
         'bayar' => 'decimal:2',
         'kembalian' => 'decimal:2',
+        'is_online' => 'boolean',
     ];
+
+    // Scope untuk filter
+    public function scopeOffline($query)
+    {
+        return $query->where('is_online', false);
+    }
+
+    public function scopeOnline($query)
+    {
+        return $query->where('is_online', true);
+    }
 
     // Relationships
     public function pasien()

@@ -112,19 +112,9 @@ class PenjualanController extends Controller
 
         DB::beginTransaction();
         try {
-            // Generate unique invoice number (INV-YYYYMMDD-XXXX)
-            $today = now()->format('Ymd');
-            $lastPenjualan = Penjualan::where('no_faktur', 'like', "INV-$today%")
-                ->orderBy('no_faktur', 'desc')
-                ->first();
-
-            $sequence = '0001';
-            if ($lastPenjualan) {
-                $lastSequence = intval(substr($lastPenjualan->no_faktur, -4));
-                $sequence = str_pad($lastSequence + 1, 4, '0', STR_PAD_LEFT);
-            }
-
-            $noFaktur = "INV-$today-$sequence";
+            // Generate unique invoice number dengan prefix OFF- jika mode offline
+            $isOffline = config('app.app_mode') === 'offline';
+            $noFaktur = $this->generateNoFaktur($isOffline);
 
             // Create penjualan
             $penjualan = Penjualan::create([
@@ -142,6 +132,7 @@ class PenjualanController extends Controller
                 'kembalian' => $validated['kembalian'],
                 'keterangan' => $validated['keterangan'] ?? null,
                 'user_id' => Auth::id(),
+                'is_online' => !$isOffline, // false jika offline, true jika online
             ]);
 
             // Create penjualan details
@@ -674,5 +665,27 @@ class PenjualanController extends Controller
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan saat menghapus penjualan: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Generate nomor faktur dengan prefix OFF- untuk offline
+     */
+    protected function generateNoFaktur($isOffline = false)
+    {
+        $date = now()->format('Ymd');
+        $prefix = $isOffline ? 'OFF-' : 'INV-';
+
+        $latest = Penjualan::where('no_faktur', 'like', "{$prefix}{$date}%")
+            ->latest('id')
+            ->first();
+
+        if ($latest) {
+            $lastNumber = (int) substr($latest->no_faktur, -4);
+            $sequence = $lastNumber + 1;
+        } else {
+            $sequence = 1;
+        }
+
+        return $prefix . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }

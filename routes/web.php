@@ -142,4 +142,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('stock_opname/{stockOpname}/complete', [StockOpnameController::class, 'complete'])->name('stock_opname.complete');
     Route::get('stock_opname/{stockOpname}/print', [StockOpnameController::class, 'print'])->name('stock_opname.print');
     Route::resource('stock_opname', StockOpnameController::class);
+
+    // Sync routes (untuk aplikasi offline)
+    Route::get('/sync', [\App\Http\Controllers\SyncController::class, 'index'])->name('sync.index');
+    Route::post('/sync/push', [\App\Http\Controllers\SyncController::class, 'push'])->name('sync.push');
+    Route::post('/sync/pull', [\App\Http\Controllers\SyncController::class, 'pull'])->name('sync.pull');
+    Route::get('/sync/check-connection', [\App\Http\Controllers\SyncController::class, 'checkConnection'])->name('sync.check');
 });
