@@ -8,6 +8,7 @@ use App\Models\Pembelian;
 use App\Models\PembelianDetail;
 use App\Models\Stok;
 use App\Models\ObatSatuan;
+use App\Models\Obat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
@@ -216,9 +217,13 @@ class SyncController extends Controller
                     'server_id' => $data['id'], // ID dari server
                 ]);
 
-                // Insert details
+                // Insert details dan kurangi stok dengan FIFO
                 foreach ($data['details'] as $detail) {
-                    PenjualanDetail::create([
+                    // Get obat info untuk error message
+                    $obat = Obat::find($detail['obat_id']);
+
+                    // Create penjualan detail
+                    $penjualanDetail = PenjualanDetail::create([
                         'penjualan_id' => $penjualan->id,
                         'obat_id' => $detail['obat_id'],
                         'satuan_id' => $detail['satuan_id'],
@@ -232,7 +237,58 @@ class SyncController extends Controller
                         'embalase' => $detail['embalase'] ?? 0,
                         'total' => $detail['total'],
                         'no_batch' => $detail['no_batch'] ?? '',
+                        'tanggal_expired' => null,
                         'lokasi_id' => $detail['lokasi_id'] ?? 1,
+                    ]);
+
+                    // Get ObatSatuan untuk FIFO
+                    $obatSatuan = ObatSatuan::where('obat_id', $detail['obat_id'])
+                        ->where('satuan_id', $detail['satuan_id'])
+                        ->first();
+
+                    // FIFO Stock Reduction Logic (sama seperti PenjualanController)
+                    $availableStocks = Stok::where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
+                        ->where('qty', '>', 0)
+                        ->orderBy('tanggal_expired', 'asc') // FIFO: oldest first
+                        ->get();
+
+                    $remainingQty = $detail['jumlah'];
+                    $firstBatch = null;
+                    $weightedHargaBeli = 0;
+                    $totalQtyUsed = 0;
+
+                    // Loop dan kurangi stok
+                    foreach ($availableStocks as $stok) {
+                        if ($remainingQty <= 0) break;
+
+                        if (!$firstBatch) {
+                            $firstBatch = $stok;
+                        }
+
+                        $qtyToTake = min($remainingQty, $stok->qty);
+
+                        // Hitung weighted average harga_beli
+                        $weightedHargaBeli += ($stok->harga_beli * $qtyToTake);
+                        $totalQtyUsed += $qtyToTake;
+
+                        // Kurangi stok
+                        $stok->qty -= $qtyToTake;
+                        $stok->save();
+
+                        $remainingQty -= $qtyToTake;
+                    }
+
+                    // Check jika stok tidak cukup
+                    if ($remainingQty > 0) {
+                        throw new \Exception("Stok tidak mencukupi untuk " . ($obat ? $obat->nama_obat : "obat ID {$detail['obat_id']}") . ". Kurang {$remainingQty} unit.");
+                    }
+
+                    // Update detail dengan batch info
+                    $avgHargaBeli = $totalQtyUsed > 0 ? $weightedHargaBeli / $totalQtyUsed : 0;
+                    $penjualanDetail->update([
+                        'tanggal_expired' => $firstBatch ? $firstBatch->tanggal_expired : null,
+                        'harga_beli' => $avgHargaBeli > 0 ? $avgHargaBeli : ($detail['harga_beli'] ?? 0),
+                        'no_batch' => $firstBatch ? $firstBatch->no_batch : ($detail['no_batch'] ?? '')
                     ]);
                 }
 
