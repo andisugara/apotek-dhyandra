@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Obat;
+use App\Models\ObatSatuan;
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
 use App\Models\Stok;
@@ -35,20 +37,31 @@ class PenjualanApiController extends Controller
             $validator = Validator::make($request->all(), [
                 'offline_id' => 'required|integer',
                 'no_faktur' => 'required|string',
-                'tanggal' => 'required|date',
-                'pasien_id' => 'nullable|exists:pasiens,id',
-                'nama_pasien' => 'required|string',
-                'dokter' => 'nullable|string',
-                'total' => 'required|numeric',
+                'tanggal_penjualan' => 'required|date',
+                'pasien_id' => 'nullable|exists:pasien,id',
+                'jenis' => 'required|in:TUNAI,NON_TUNAI',
+                'keterangan' => 'nullable|string',
+                'subtotal' => 'required|numeric',
+                'diskon_total' => 'nullable|numeric',
+                'ppn_total' => 'nullable|numeric',
+                'tuslah_total' => 'nullable|numeric',
+                'embalase_total' => 'nullable|numeric',
+                'grand_total' => 'required|numeric',
                 'bayar' => 'required|numeric',
                 'kembalian' => 'required|numeric',
                 'detail' => 'required|array',
-                'detail.*.obat_id' => 'required|exists:obats,id',
-                'detail.*.qty' => 'required|integer|min:1',
+                'detail.*.obat_id' => 'required|exists:obat,id',
+                'detail.*.satuan_id' => 'required|exists:satuan_obat,id',
+                'detail.*.jumlah' => 'required|integer|min:1',
                 'detail.*.harga' => 'required|numeric',
-                'detail.*.diskon_persen' => 'nullable|numeric',
-                'detail.*.diskon_rp' => 'nullable|numeric',
+                'detail.*.subtotal' => 'required|numeric',
+                'detail.*.diskon' => 'nullable|numeric',
+                'detail.*.ppn' => 'nullable|numeric',
+                'detail.*.tuslah' => 'nullable|numeric',
+                'detail.*.embalase' => 'nullable|numeric',
                 'detail.*.total' => 'required|numeric',
+                'detail.*.no_batch' => 'nullable|string',
+                'detail.*.lokasi_id' => 'nullable|exists:lokasi_obat,id',
             ]);
 
             if ($validator->fails()) {
@@ -75,11 +88,16 @@ class PenjualanApiController extends Controller
             // Buat penjualan baru
             $penjualan = Penjualan::create([
                 'no_faktur' => $request->no_faktur,
-                'tanggal' => $request->tanggal,
+                'tanggal_penjualan' => $request->tanggal_penjualan,
                 'pasien_id' => $request->pasien_id,
-                'nama_pasien' => $request->nama_pasien,
-                'dokter' => $request->dokter,
-                'total' => $request->total,
+                'jenis' => $request->jenis ?? 'TUNAI',
+                'keterangan' => $request->keterangan ?? null,
+                'subtotal' => $request->subtotal,
+                'diskon_total' => $request->diskon_total ?? 0,
+                'ppn_total' => $request->ppn_total ?? 0,
+                'tuslah_total' => $request->tuslah_total ?? 0,
+                'embalase_total' => $request->embalase_total ?? 0,
+                'grand_total' => $request->grand_total,
                 'bayar' => $request->bayar,
                 'kembalian' => $request->kembalian,
                 'is_online' => true, // Mark as online
@@ -89,24 +107,79 @@ class PenjualanApiController extends Controller
 
             // Create detail dan update stok
             foreach ($request->detail as $item) {
+                // Get the obat info
+                $obat = Obat::findOrFail($item['obat_id']);
+
                 // Create penjualan detail
-                PenjualanDetail::create([
+                $penjualanDetail = PenjualanDetail::create([
                     'penjualan_id' => $penjualan->id,
                     'obat_id' => $item['obat_id'],
-                    'qty' => $item['qty'],
-                    'satuan' => $item['satuan'] ?? 'PCS',
+                    'satuan_id' => $item['satuan_id'],
+                    'jumlah' => $item['jumlah'],
+                    'harga_beli' => 0, // Will be updated from stock
                     'harga' => $item['harga'],
-                    'diskon_persen' => $item['diskon_persen'] ?? 0,
-                    'diskon_rp' => $item['diskon_rp'] ?? 0,
+                    'subtotal' => $item['subtotal'],
+                    'diskon' => $item['diskon'] ?? 0,
+                    'ppn' => $item['ppn'] ?? 0,
+                    'tuslah' => $item['tuslah'] ?? 0,
+                    'embalase' => $item['embalase'] ?? 0,
                     'total' => $item['total'],
+                    'no_batch' => $item['no_batch'] ?? '',
+                    'lokasi_id' => $item['lokasi_id'] ?? 1
                 ]);
 
-                // Update stok dengan FIFO
-                $this->updateStokFIFO(
-                    $item['obat_id'],
-                    $item['qty'],
-                    $item['lokasi_id'] ?? 1
-                );
+                // Get the ObatSatuan record
+                $obatSatuan = ObatSatuan::where('obat_id', $item['obat_id'])
+                    ->where('satuan_id', $item['satuan_id'])
+                    ->first();
+
+                // FIFO Stock Reduction Logic
+                $availableStocks = Stok::where('obat_satuan_id', $obatSatuan ? $obatSatuan->id : null)
+                    ->where('qty', '>', 0)
+                    ->orderBy('tanggal_expired', 'asc') // FIFO: oldest expiry first
+                    ->get();
+
+                $remainingQty = $item['jumlah'];
+                $firstBatch = null;
+                $weightedHargaBeli = 0;
+                $totalQtyUsed = 0;
+
+                // Loop through stocks and reduce quantity following FIFO
+                foreach ($availableStocks as $stok) {
+                    if ($remainingQty <= 0) break;
+
+                    // Store first batch info
+                    if (!$firstBatch) {
+                        $firstBatch = $stok;
+                    }
+
+                    $qtyToTake = min($remainingQty, $stok->qty);
+
+                    // Calculate weighted average harga_beli
+                    $weightedHargaBeli += ($stok->harga_beli * $qtyToTake);
+                    $totalQtyUsed += $qtyToTake;
+
+                    // Reduce stock
+                    $stok->qty -= $qtyToTake;
+                    $stok->save();
+
+                    $remainingQty -= $qtyToTake;
+                }
+
+                // Check if we have enough stock
+                if ($remainingQty > 0) {
+                    throw new \Exception("Stok tidak mencukupi untuk {$obat->nama_obat}. Kurang {$remainingQty} unit.");
+                }
+
+                // Calculate average harga_beli
+                $avgHargaBeli = $totalQtyUsed > 0 ? $weightedHargaBeli / $totalQtyUsed : 0;
+
+                // Update detail with batch info and average harga_beli
+                $penjualanDetail->update([
+                    'tanggal_expired' => $firstBatch ? $firstBatch->tanggal_expired : null,
+                    'harga_beli' => $avgHargaBeli,
+                    'no_batch' => $firstBatch ? $firstBatch->no_batch : ($item['no_batch'] ?? '')
+                ]);
             }
 
             DB::commit();
@@ -150,16 +223,16 @@ class PenjualanApiController extends Controller
             // Optionally filter by date range
             $query = Penjualan::with(['details.obat', 'pasien'])
                 ->where('is_online', true)
-                ->orderBy('tanggal', 'desc')
+                ->orderBy('tanggal_penjualan', 'desc')
                 ->orderBy('id', 'desc');
 
             // Optional: filter by date range
             if ($request->has('from_date')) {
-                $query->where('tanggal', '>=', $request->from_date);
+                $query->where('tanggal_penjualan', '>=', $request->from_date);
             }
 
             if ($request->has('to_date')) {
-                $query->where('tanggal', '<=', $request->to_date);
+                $query->where('tanggal_penjualan', '<=', $request->to_date);
             }
 
             // Optional: limit results
@@ -171,23 +244,32 @@ class PenjualanApiController extends Controller
                 return [
                     'id' => $p->id, // This will be stored as server_id on offline
                     'no_faktur' => $p->no_faktur,
-                    'tanggal' => $p->tanggal,
+                    'tanggal_penjualan' => $p->tanggal_penjualan,
                     'pasien_id' => $p->pasien_id,
-                    'nama_pasien' => $p->nama_pasien,
-                    'dokter' => $p->dokter,
-                    'total' => $p->total,
+                    'jenis' => $p->jenis,
+                    'keterangan' => $p->keterangan,
+                    'subtotal' => $p->subtotal,
+                    'diskon_total' => $p->diskon_total,
+                    'ppn_total' => $p->ppn_total,
+                    'tuslah_total' => $p->tuslah_total,
+                    'embalase_total' => $p->embalase_total,
+                    'grand_total' => $p->grand_total,
                     'bayar' => $p->bayar,
                     'kembalian' => $p->kembalian,
                     'user_id' => $p->user_id,
                     'detail' => $p->details->map(function ($d) {
                         return [
                             'obat_id' => $d->obat_id,
-                            'qty' => $d->qty,
-                            'satuan' => $d->satuan,
+                            'satuan_id' => $d->satuan_id,
+                            'jumlah' => $d->jumlah,
                             'harga' => $d->harga,
-                            'diskon_persen' => $d->diskon_persen,
-                            'diskon_rp' => $d->diskon_rp,
+                            'subtotal' => $d->subtotal,
+                            'diskon' => $d->diskon,
+                            'ppn' => $d->ppn,
+                            'tuslah' => $d->tuslah,
+                            'embalase' => $d->embalase,
                             'total' => $d->total,
+                            'no_batch' => $d->no_batch,
                             'lokasi_id' => $d->lokasi_id ?? 1,
                         ];
                     })
@@ -208,57 +290,6 @@ class PenjualanApiController extends Controller
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
-        }
-    }
-
-    /**
-     * Update stok using FIFO method
-     * (Copied from PenjualanController)
-     */
-    private function updateStokFIFO($obatId, $qty, $lokasiId)
-    {
-        $remainingQty = $qty;
-
-        // Get available stock sorted by oldest first (FIFO)
-        $stokItems = Stok::where('obat_id', $obatId)
-            ->where('lokasi_id', $lokasiId)
-            ->where('qty', '>', 0)
-            ->orderBy('tanggal_ed', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        // If no stock at specified location, try other locations
-        if ($stokItems->isEmpty() || $stokItems->sum('qty') < $qty) {
-            $stokItems = Stok::where('obat_id', $obatId)
-                ->where('qty', '>', 0)
-                ->orderBy('tanggal_ed', 'asc')
-                ->orderBy('created_at', 'asc')
-                ->get();
-        }
-
-        foreach ($stokItems as $stok) {
-            if ($remainingQty <= 0) {
-                break;
-            }
-
-            if ($stok->qty >= $remainingQty) {
-                // Stock in this batch is enough
-                $stok->qty -= $remainingQty;
-                $stok->save();
-                $remainingQty = 0;
-            } else {
-                // Use all stock from this batch and continue
-                $remainingQty -= $stok->qty;
-                $stok->qty = 0;
-                $stok->save();
-            }
-        }
-
-        if ($remainingQty > 0) {
-            Log::warning('Insufficient stock for obat_id: ' . $obatId, [
-                'requested' => $qty,
-                'remaining' => $remainingQty
-            ]);
         }
     }
 }
