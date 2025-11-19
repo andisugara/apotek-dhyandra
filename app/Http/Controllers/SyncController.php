@@ -186,8 +186,10 @@ class SyncController extends Controller
             $skippedCount = 0;
 
             foreach ($serverPenjualan as $data) {
-                // Skip jika sudah ada (cek berdasarkan server_id)
-                $exists = Penjualan::where('server_id', $data['id'])->exists();
+                // Skip jika sudah ada (cek berdasarkan server_id ATAU no_faktur)
+                $exists = Penjualan::where('server_id', $data['id'])
+                    ->orWhere('no_faktur', $data['no_faktur'])
+                    ->exists();
 
                 if ($exists) {
                     $skippedCount++;
@@ -311,8 +313,10 @@ class SyncController extends Controller
             $skippedCount = 0;
 
             foreach ($serverPembelian as $data) {
-                // Skip jika sudah ada (cek berdasarkan server_id)
-                $exists = Pembelian::where('server_id', $data['id'])->exists();
+                // Skip jika sudah ada (cek berdasarkan server_id ATAU no_faktur)
+                $exists = Pembelian::where('server_id', $data['id'])
+                    ->orWhere('no_faktur', $data['no_faktur'])
+                    ->exists();
 
                 if ($exists) {
                     $skippedCount++;
