@@ -17,6 +17,9 @@
                     </div>
                     <!--end::Search-->
                 </div>
+                <a href="{{ route('laporan.stok-obat.export-excel') }}" class="btn btn-success mb-5 me-3">
+                    <i class="fa fa-file-excel-o"></i> Export Excel
+                </a>
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped" id="stokObatTable">
                         <thead>
@@ -29,6 +32,7 @@
                                 <th>Satuan</th>
                                 <th>Pabrik</th>
                                 <th>Stok</th>
+                                <th>Harga Jual</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -41,7 +45,9 @@
     </div>
 @endsection
 
+
 @push('scripts')
+   
     <script>
         var table
         $(document).ready(function() {
@@ -82,6 +88,11 @@
                     {
                         data: 'stok',
                         name: 'stok',
+                        searchable: false
+                    },
+                    {
+                        data: 'harga_jual',
+                        name: 'harga_jual',
                         searchable: false
                     },
                     {

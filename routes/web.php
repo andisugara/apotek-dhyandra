@@ -129,6 +129,8 @@ Route::middleware(['auth'])->group(function () {
 
     // laporan stok obat
     Route::get('laporan/stok-obat', [\App\Http\Controllers\LaporanStokObatController::class, 'index'])->name('laporan.stok-obat.index');
+    Route::get('laporan/stok-obat/export/excel', [\App\Http\Controllers\LaporanStokObatController::class, 'exportExcel'])->name('laporan.stok-obat.export-excel');
+    Route::get('laporan/stok-obat/export/pdf', [\App\Http\Controllers\LaporanStokObatController::class, 'exportPdf'])->name('laporan.stok-obat.export-pdf');
 
     // laporan stok expired
     Route::get('laporan/stok-expired', [\App\Http\Controllers\LaporanStokExpiredController::class, 'index'])->name('laporan.stok_expired.index');
