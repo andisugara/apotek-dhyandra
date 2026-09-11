@@ -13,35 +13,35 @@ services:
         volumes:
             - ./:/var/www
         networks:
-            - msa-networks
+            - my-networks
 
     dhyandra-apotek-nginx:
         image: nginx:alpine
         container_name: dhyandra-apotek-nginx
         restart: unless-stopped
         ports:
-            - 8091:80
+            - 8004:80
         volumes:
             - ./:/var/www
             - ./docker/nginx:/etc/nginx/conf.d/
         networks:
-            - msa-networks
+            - my-networks
     dhyandra-mysql:
         image: mysql:latest
         container_name: dhyandra-mysql
         restart: unless-stopped
         tty: true
         ports:
-            - 3309:3306
+            - 3304:3306
         volumes:
             - ./mysql:/var/lib/mysql
         environment:
             MYSQL_ROOT_PASSWORD: KangSaepulDhyandra
         networks:
-            - msa-networks
+            - my-networks
 
 networks:
-    msa-networks:
+    my-networks:
         driver: bridge
-        name: msa-networks
+        name: my-networks
         external: true
